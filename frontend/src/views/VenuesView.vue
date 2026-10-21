@@ -1,17 +1,17 @@
 <template>
   <div>
     <div class="page-head">
-      <h2 class="page-title">场馆一览</h2>
-      <span class="page-desc">浏览校园体育场馆，查看开放状态并预订</span>
+      <h2 class="page-title">Venues</h2>
+      <span class="page-desc">Browse campus venues, see what is open, book a slot</span>
     </div>
 
     <div class="table-toolbar">
-      <el-input v-model="keyword" placeholder="搜索名称 / 楼栋" clearable style="width: 240px"
+      <el-input v-model="keyword" placeholder="Search name or building" clearable style="width: 240px"
         @keyup.enter="load" @clear="load" />
-      <el-select v-model="status" placeholder="全部状态" clearable style="width: 150px" @change="load">
+      <el-select v-model="status" placeholder="All statuses" clearable style="width: 150px" @change="load">
         <el-option v-for="(v, k) in statusOptions" :key="k" :label="v.label" :value="k" />
       </el-select>
-      <el-button type="primary" :icon="Search" @click="load">查询</el-button>
+      <el-button type="primary" :icon="Search" @click="load">Search</el-button>
     </div>
 
     <el-row :gutter="16">
@@ -23,18 +23,18 @@
           </div>
           <div class="venue-meta">
             <el-tag size="small" effect="plain">{{ venueTypeLabel(v.type) }}</el-tag>
-            <el-tag size="small" effect="plain" type="info">{{ v.indoor ? '室内' : '室外' }}</el-tag>
+            <el-tag size="small" effect="plain" type="info">{{ v.indoor ? 'Indoor' : 'Outdoor' }}</el-tag>
           </div>
           <div class="venue-info">
             <div><el-icon><Location /></el-icon> {{ v.building || '—' }} · {{ v.location || '—' }}</div>
-            <div><el-icon><User /></el-icon> 可容纳 {{ v.capacity }} 人</div>
+            <div><el-icon><User /></el-icon> {{ v.capacity }} people</div>
             <div><el-icon><Clock /></el-icon> {{ formatTime(v.openTime) }} – {{ formatTime(v.closeTime) }}</div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-empty v-if="!loading && venues.length === 0" description="没有匹配的场馆" />
+    <el-empty v-if="!loading && venues.length === 0" description="No venues match" />
 
     <el-pagination v-if="total > size" class="pager" layout="prev, pager, next" :total="total"
       :page-size="size" :current-page="page" @current-change="onPage" background />
@@ -58,9 +58,9 @@ const size = ref(12)
 const total = ref(0)
 
 const statusOptions = {
-  OPEN: { label: '开放中' },
-  MAINTENANCE: { label: '维护中' },
-  CLOSED: { label: '已关闭' },
+  OPEN: { label: 'Open' },
+  MAINTENANCE: { label: 'Maintenance' },
+  CLOSED: { label: 'Closed' },
 }
 
 async function load() {

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1140" height="660" viewBox="0 0 1140 660" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1140" height="660" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 1 — Who can do what</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Three roles, seven use cases. A student never sees the approval queue and a teacher never edits a venue.</text>
+<rect x="372" y="108" width="416" height="500" rx="16" fill="#fbfcfe" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="392" y="132" font-size="9.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">CAMPUS VENUE BOOKING</text>
+<ellipse cx="580" cy="172" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="176" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Browse venues and free slots</text>
+<ellipse cx="580" cy="234" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="238" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Create a booking</text>
+<ellipse cx="580" cy="296" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="300" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Cancel own booking</text>
+<ellipse cx="580" cy="358" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="362" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Approve or reject a booking</text>
+<ellipse cx="580" cy="420" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="424" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Check in · mark no-show</text>
+<ellipse cx="580" cy="482" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="486" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Manage venues, users, equipment</text>
+<ellipse cx="580" cy="544" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="548" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Read utilisation reports</text>
+<circle cx="150" cy="250" r="11" fill="none" stroke="#2f6fed" stroke-width="1.6"/>
+<path d="M 150 261 V 290 M 132 272 H 168 M 150 290 L 135 312 M 150 290 L 165 312" stroke="#2f6fed" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="150" y="332" font-size="13" font-weight="700" fill="#2f6fed" text-anchor="middle">Student</text>
+<text x="150" y="348" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">books for themselves or a class</text>
+<circle cx="1010" cy="300" r="11" fill="none" stroke="#c2761a" stroke-width="1.6"/>
+<path d="M 1010 311 V 340 M 992 322 H 1028 M 1010 340 L 995 362 M 1010 340 L 1025 362" stroke="#c2761a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="1010" y="382" font-size="13" font-weight="700" fill="#c2761a" text-anchor="middle">Teacher</text>
+<text x="1010" y="398" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">owns the approval queue</text>
+<circle cx="1010" cy="470" r="11" fill="none" stroke="#0e9384" stroke-width="1.6"/>
+<path d="M 1010 481 V 510 M 992 492 H 1028 M 1010 510 L 995 532 M 1010 510 L 1025 532" stroke="#0e9384" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="1010" y="552" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle">Admin</text>
+<text x="1010" y="568" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">owns the catalogue</text>
+<path d="M 172.0 300.0 L 290.0 300.0 Q 300.0 300.0 300.0 290.0 L 300.0 182.0 Q 300.0 172.0 310.0 172.0 L 378.0 172.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 172.0 300.0 L 290.0 300.0 Q 300.0 300.0 300.0 290.0 L 300.0 244.0 Q 300.0 234.0 310.0 234.0 L 378.0 234.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 172.0 300.0 L 298.0 300.0 Q 300.0 300.0 300.0 298.0 L 300.0 298.0 Q 300.0 296.0 302.0 296.0 L 378.0 296.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 904.0 350.0 Q 900.0 350.0 900.0 354.0 L 900.0 354.0 Q 900.0 358.0 896.0 358.0 L 782.0 358.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 910.0 350.0 Q 900.0 350.0 900.0 360.0 L 900.0 410.0 Q 900.0 420.0 890.0 420.0 L 782.0 420.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 910.0 350.0 Q 900.0 350.0 900.0 360.0 L 900.0 534.0 Q 900.0 544.0 890.0 544.0 L 782.0 544.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 510.0 L 930.0 492.0 Q 930.0 482.0 920.0 482.0 L 782.0 482.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 510.0 L 930.0 430.0 Q 930.0 420.0 920.0 420.0 L 782.0 420.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 530.0 L 930.0 534.0 Q 930.0 544.0 920.0 544.0 L 782.0 544.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<text x="44" y="636" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">The same endpoint can be reachable by two roles: a teacher and an admin may both check a class in, but only an admin can create a venue.</text>
+</svg>

@@ -1,33 +1,33 @@
 <template>
   <div v-loading="loading">
     <div class="page-head">
-      <h2 class="page-title">使用报表</h2>
+      <h2 class="page-title">Reports</h2>
       <div class="table-toolbar" style="margin: 0">
         <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD"
-          :clearable="false" start-placeholder="开始" end-placeholder="结束" @change="load" style="width: 260px" />
-        <el-button type="primary" :icon="Refresh" @click="load">刷新</el-button>
+          :clearable="false" start-placeholder="Start" end-placeholder="End" @change="load" style="width: 260px" />
+        <el-button type="primary" :icon="Refresh" @click="load">Refresh</el-button>
       </div>
     </div>
 
     <el-row :gutter="16" class="summary-cards">
-      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.total || 0 }}</div><div class="kpi-label">预订总数</div></el-card></el-col>
-      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.APPROVED || 0 }}</div><div class="kpi-label">已通过</div></el-card></el-col>
-      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.PENDING || 0 }}</div><div class="kpi-label">待审批</div></el-card></el-col>
-      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.NO_SHOW || 0 }}</div><div class="kpi-label">爽约</div></el-card></el-col>
+      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.total || 0 }}</div><div class="kpi-label">Bookings</div></el-card></el-col>
+      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.APPROVED || 0 }}</div><div class="kpi-label">Approved</div></el-card></el-col>
+      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.PENDING || 0 }}</div><div class="kpi-label">Pending</div></el-card></el-col>
+      <el-col :span="6"><el-card shadow="never"><div class="kpi-num">{{ summary.byStatus?.NO_SHOW || 0 }}</div><div class="kpi-label">No-show</div></el-card></el-col>
     </el-row>
 
     <el-card class="report-card">
-      <span class="card-title">场馆利用率</span>
+      <span class="card-title">Venue utilisation</span>
       <el-table :data="util" stripe>
-        <el-table-column prop="venueName" label="场馆" min-width="140" />
-        <el-table-column label="类型" width="130">
+        <el-table-column prop="venueName" label="Venue" min-width="140" />
+        <el-table-column label="Type" width="130">
           <template #default="{ row }"><el-tag effect="plain" size="small">{{ venueTypeLabel(row.type) }}</el-tag></template>
         </el-table-column>
-        <el-table-column prop="total" label="总预订" width="100" align="center" />
-        <el-table-column prop="completed" label="已完成" width="100" align="center" />
-        <el-table-column prop="cancelled" label="已取消" width="100" align="center" />
-        <el-table-column prop="noShow" label="爽约" width="100" align="center" />
-        <el-table-column label="利用率" width="160">
+        <el-table-column prop="total" label="Total" width="100" align="center" />
+        <el-table-column prop="completed" label="Completed" width="100" align="center" />
+        <el-table-column prop="cancelled" label="Cancelled" width="100" align="center" />
+        <el-table-column prop="noShow" label="No-show" width="100" align="center" />
+        <el-table-column label="Utilisation" width="160">
           <template #default="{ row }">
             <el-progress :percentage="row.utilizationRate || 0" :stroke-width="14" />
           </template>

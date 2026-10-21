@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1160" height="830" viewBox="0 0 1160 830" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1160" height="830" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 2 — System architecture</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Four layers, one request path. Everything crossing a layer boundary goes through a DTO.</text>
+<rect x="40" y="112" width="840" height="132" rx="14" fill="#f7f9fc" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="138" font-size="10.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">CLIENT · BROWSER</text>
+<rect x="60" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="186.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Vue 3 SPA</text>
+<text x="186.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">views + Element Plus</text>
+<rect x="333" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="459.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Vue Router</text>
+<text x="459.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">role guards per route</text>
+<rect x="606" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="732.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Axios client</text>
+<text x="732.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">adds Bearer token</text>
+<rect x="40" y="270" width="840" height="166" rx="14" fill="#f7f9fc" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="296" font-size="10.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">API · SPRING MVC</text>
+<rect x="60" y="302" width="799" height="46" rx="8" fill="#eaf1ff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="76" y="330" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Security filter chain</text>
+<text x="222" y="330" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">JwtAuthenticationFilter → SecurityContext → @PreAuthorize-style role checks</text>
+<rect x="60" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="122.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">AuthController</text>
+<rect x="194" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="256.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">VenueController</text>
+<rect x="328" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="390.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">BookingController</text>
+<rect x="462" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="524.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">EquipmentController</text>
+<rect x="596" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="658.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">ReportController</text>
+<rect x="730" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="792.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">AdminController</text>
+<rect x="40" y="462" width="840" height="152" rx="14" fill="#faf8ff" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="488" font-size="10.5" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="1.2">DOMAIN SERVICES</text>
+<rect x="60" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="188.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">AuthService</text>
+<text x="188.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">login · register · profile</text>
+<rect x="332" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="460.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">VenueService</text>
+<text x="460.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">catalogue · availability</text>
+<rect x="604" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="732.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">BookingService</text>
+<text x="732.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">conflict check · approval</text>
+<rect x="60" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="188.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">EquipmentService</text>
+<text x="188.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">borrow · return · stock</text>
+<rect x="332" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="460.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">ReportService</text>
+<text x="460.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">utilisation · summary</text>
+<rect x="604" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="732.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">NotificationService</text>
+<text x="732.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">in-app inbox</text>
+<rect x="40" y="640" width="840" height="120" rx="14" fill="#f6fbfa" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="666" font-size="10.5" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="1.2">PERSISTENCE</text>
+<rect x="60" y="674" width="236" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="178.0" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Spring Data JPA</text>
+<text x="178.0" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">one repository per aggregate</text>
+<rect x="348" y="674" width="176" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="436.0" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Hibernate</text>
+<text x="436.0" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">entity mapping</text>
+<rect x="576" y="674" width="283" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="717.5" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">H2 (dev) / MySQL 8 (prod)</text>
+<text x="717.5" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">same schema, profile switch</text>
+<path d="M 298.0 703.0 L 344.0 703.0" fill="none" stroke="#0e9384" stroke-width="1.4" marker-end="url(#art)"/>
+<path d="M 526.0 703.0 L 572.0 703.0" fill="none" stroke="#0e9384" stroke-width="1.4" marker-end="url(#art)"/>
+<path d="M 460.0 244.0 L 460.0 266.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="259.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">HTTPS · JSON</text>
+<path d="M 460.0 436.0 L 460.0 458.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="451.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">method call</text>
+<path d="M 460.0 614.0 L 460.0 636.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="629.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">query</text>
+<text x="900" y="96" font-size="10.5" font-weight="700" fill="#d1435f" text-anchor="start" letter-spacing="1.2">CROSS-CUTTING</text>
+<rect x="900" y="112" width="220" height="128" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="138" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">JwtService</text>
+<text x="916" y="158" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">HS256 sign / verify</text>
+<text x="916" y="174" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">hand-rolled, no lib</text>
+<path d="M 898.0 176.0 L 886.0 176.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="258" width="220" height="104" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="284" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Scheduler</text>
+<text x="916" y="304" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">@Scheduled sweep</text>
+<text x="916" y="320" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">closes stale bookings</text>
+<path d="M 898.0 310.0 L 886.0 310.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="380" width="220" height="118" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="406" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">AuditService</text>
+<text x="916" y="426" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">append-only trail</text>
+<text x="916" y="442" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">actor · action · target</text>
+<path d="M 898.0 439.0 L 886.0 439.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="516" width="220" height="118" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="542" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Exception handler</text>
+<text x="916" y="562" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">one error envelope</text>
+<text x="916" y="578" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">for every failure</text>
+<path d="M 898.0 575.0 L 886.0 575.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<text x="44" y="800" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">Requests only move downward. Notifications and audit writes are side effects of a service call, so the API layer never holds business state.</text>
+</svg>

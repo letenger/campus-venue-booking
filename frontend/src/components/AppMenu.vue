@@ -1,6 +1,6 @@
 <template>
   <el-menu :default-active="active" router class="app-menu">
-    <div class="brand">校园体育场馆预定</div>
+    <div class="brand">Campus Venue Booking</div>
     <el-menu-item v-for="item in items" :key="item.path" :index="item.path">
       <el-icon><component :is="item.icon" /></el-icon>
       <span>{{ item.label }}</span>
@@ -18,13 +18,13 @@ const active = computed(() => '/' + (route.path.split('/')[1] || 'venues'))
 
 // Mirror of the router table, filtered by the current role.
 const ALL = [
-  { path: '/venues', label: '场馆一览', icon: 'House', roles: null },
-  { path: '/bookings', label: '我的预订', icon: 'Tickets', roles: null },
-  { path: '/approvals', label: '预订审批', icon: 'Stamp', roles: ['TEACHER', 'ADMIN'] },
-  { path: '/admin/venues', label: '场馆管理', icon: 'OfficeBuilding', roles: ['ADMIN'] },
-  { path: '/admin/users', label: '用户管理', icon: 'User', roles: ['ADMIN'] },
-  { path: '/reports', label: '使用报表', icon: 'DataLine', roles: ['TEACHER', 'ADMIN'] },
-  { path: '/notifications', label: '通知中心', icon: 'Bell', roles: null },
+  { path: '/venues', label: 'Venues', icon: 'House', roles: null },
+  { path: '/bookings', label: 'My bookings', icon: 'Tickets', roles: null },
+  { path: '/approvals', label: 'Approvals', icon: 'Stamp', roles: ['TEACHER', 'ADMIN'] },
+  { path: '/admin/venues', label: 'Manage venues', icon: 'OfficeBuilding', roles: ['ADMIN'] },
+  { path: '/admin/users', label: 'Users', icon: 'User', roles: ['ADMIN'] },
+  { path: '/reports', label: 'Reports', icon: 'DataLine', roles: ['TEACHER', 'ADMIN'] },
+  { path: '/notifications', label: 'Notifications', icon: 'Bell', roles: null },
 ]
 
 const role = computed(() => authState.user?.role)

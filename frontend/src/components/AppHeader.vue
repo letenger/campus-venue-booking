@@ -9,7 +9,7 @@
         <span class="avatar">{{ initial }}</span>
         {{ roleLabel(user?.role) }} · {{ user?.realName || user?.username }}
       </span>
-      <span class="logout-link" @click="onLogout">退出登录</span>
+      <span class="logout-link" @click="onLogout">Sign out</span>
     </div>
   </header>
 </template>
@@ -45,9 +45,9 @@ function goNotifications() {
 
 async function onLogout() {
   try {
-    await ElMessageBox.confirm('确定退出登录？', '退出登录', {
-      confirmButtonText: '退出',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm('Sign out?', 'Sign out', {
+      confirmButtonText: 'Sign out',
+      cancelButtonText: 'Cancel',
       type: 'warning',
     })
   } catch {

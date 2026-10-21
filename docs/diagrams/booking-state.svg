@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="470" viewBox="0 0 1180 470" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1180" height="470" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 5 — Booking status machine</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Six states. Only two of them are ever writable by a teacher, and two are terminal by timeout.</text>
+<rect x="140" y="140" width="200" height="66" rx="10" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.5"/>
+<text x="240.0" y="168" font-size="13" font-weight="700" fill="#c2761a" text-anchor="middle" letter-spacing="0.6">PENDING</text>
+<text x="240.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">waiting for a teacher</text>
+<rect x="520" y="140" width="200" height="66" rx="10" fill="#e8f7f5" stroke="#0e9384" stroke-width="1.5"/>
+<text x="620.0" y="168" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle" letter-spacing="0.6">APPROVED</text>
+<text x="620.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">slot is held</text>
+<rect x="900" y="140" width="200" height="66" rx="10" fill="#ffffff" stroke="#0e9384" stroke-width="1.5"/>
+<text x="1000.0" y="168" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle" letter-spacing="0.6">COMPLETED</text>
+<text x="1000.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">checked in on time</text>
+<rect x="140" y="300" width="200" height="66" rx="10" fill="#fdeef1" stroke="#d1435f" stroke-width="1.5"/>
+<text x="240.0" y="328" font-size="13" font-weight="700" fill="#d1435f" text-anchor="middle" letter-spacing="0.6">REJECTED</text>
+<text x="240.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">teacher said no</text>
+<rect x="520" y="300" width="200" height="66" rx="10" fill="#eef2f7" stroke="#5b6b82" stroke-width="1.5"/>
+<text x="620.0" y="328" font-size="13" font-weight="700" fill="#5b6b82" text-anchor="middle" letter-spacing="0.6">CANCELLED</text>
+<text x="620.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">owner gave the slot back</text>
+<rect x="900" y="300" width="200" height="66" rx="10" fill="#fdeef1" stroke="#d1435f" stroke-width="1.5"/>
+<text x="1000.0" y="328" font-size="13" font-weight="700" fill="#d1435f" text-anchor="middle" letter-spacing="0.6">NO_SHOW</text>
+<text x="1000.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">never checked in</text>
+<circle cx="80" cy="173" r="9" fill="#16202e"/>
+<path d="M 90.0 173.0 L 138.0 173.0" fill="none" stroke="#16202e" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="96" y="162" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="start">book</text>
+<path d="M 80.0 160.0 L 80.0 122.0 Q 80.0 108.0 94.0 108.0 L 546.0 108.0 Q 560.0 108.0 560.0 122.0 L 560.0 138.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)" stroke-dasharray="5 4"/>
+<text x="300" y="128" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">created without an approval need — auto-approved</text>
+<path d="M 340.0 173.0 L 518.0 173.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)"/>
+<text x="429" y="163" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">teacher approves</text>
+<path d="M 720.0 173.0 L 898.0 173.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)"/>
+<text x="809" y="163" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">staff checks in</text>
+<path d="M 240.0 206.0 L 240.0 298.0" fill="none" stroke="#d1435f" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="250" y="258" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">teacher rejects</text>
+<path d="M 340.0 196.0 L 386.0 196.0 Q 400.0 196.0 400.0 210.0 L 400.0 226.0 Q 400.0 240.0 414.0 240.0 L 566.0 240.0 Q 580.0 240.0 580.0 254.0 L 580.0 298.0" fill="none" stroke="#5b6b82" stroke-width="1.5" marker-end="url(#ar)" stroke-dasharray="4 4"/>
+<text x="430" y="232" font-size="10.5" font-weight="600" fill="#5b6b82" text-anchor="middle">owner cancels</text>
+<path d="M 620.0 206.0 L 620.0 298.0" fill="none" stroke="#5b6b82" stroke-width="1.5" marker-end="url(#ar)" stroke-dasharray="4 4"/>
+<text x="632" y="258" font-size="10.5" font-weight="600" fill="#5b6b82" text-anchor="start">owner cancels</text>
+<path d="M 720.0 190.0 L 806.0 190.0 Q 820.0 190.0 820.0 204.0 L 820.0 319.0 Q 820.0 333.0 834.0 333.0 L 898.0 333.0" fill="none" stroke="#d1435f" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+<text x="830" y="250" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">@Scheduled sweep</text>
+<text x="830" y="264" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">after end time</text>
+<text x="40" y="432" font-size="11.5" font-weight="400" fill="#8b98ab" text-anchor="start">approve and reject are the only two writes a teacher can make. COMPLETED and NO_SHOW are set by staff or by the nightly sweep.</text>
+</svg>

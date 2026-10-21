@@ -1,50 +1,50 @@
-// Enum label / tag-type maps mirroring the Spring Boot backend (com.example.sems.domain.*).
+// Enum labels mirroring com.campus.venue.domain, plus small date helpers.
 
 export const VENUE_TYPE_LABELS = {
-  VOLLEYBALL: '排球场',
-  BADMINTON: '羽毛球场',
-  FOOTBALL: '足球场',
-  TENNIS_INDOOR: '室内网球场',
-  TENNIS_OUTDOOR: '室外网球场',
-  SQUASH: '壁球场',
-  BASKETBALL: '篮球场',
-  TABLE_TENNIS: '乒乓球室',
-  OTHER: '其他',
+  VOLLEYBALL: 'Volleyball court',
+  BADMINTON: 'Badminton court',
+  FOOTBALL: 'Football pitch',
+  TENNIS_INDOOR: 'Indoor tennis court',
+  TENNIS_OUTDOOR: 'Outdoor tennis court',
+  SQUASH: 'Squash court',
+  BASKETBALL: 'Basketball court',
+  TABLE_TENNIS: 'Table tennis room',
+  OTHER: 'Other',
 }
 
 export const VENUE_STATUS = {
-  OPEN: { label: '开放中', type: 'success' },
-  MAINTENANCE: { label: '维护中', type: 'warning' },
-  CLOSED: { label: '已关闭', type: 'info' },
+  OPEN: { label: 'Open', type: 'success' },
+  MAINTENANCE: { label: 'Maintenance', type: 'warning' },
+  CLOSED: { label: 'Closed', type: 'info' },
 }
 
 export const BOOKING_STATUS = {
-  PENDING: { label: '待审批', type: 'warning' },
-  APPROVED: { label: '已通过', type: 'success' },
-  REJECTED: { label: '已拒绝', type: 'danger' },
-  CANCELLED: { label: '已取消', type: 'info' },
-  COMPLETED: { label: '已完成', type: 'success' },
-  NO_SHOW: { label: '爽约', type: 'danger' },
+  PENDING: { label: 'Pending', type: 'warning' },
+  APPROVED: { label: 'Approved', type: 'success' },
+  REJECTED: { label: 'Rejected', type: 'danger' },
+  CANCELLED: { label: 'Cancelled', type: 'info' },
+  COMPLETED: { label: 'Completed', type: 'success' },
+  NO_SHOW: { label: 'No-show', type: 'danger' },
 }
 
 export const BOOKING_PURPOSE = {
-  FREE_PLAY: '自由活动',
-  CLASS: '课程/班级活动',
-  CLUB_TRAINING: '社团训练',
-  EVENT: '赛事活动',
-  EXAM: '体育考试',
-  OTHER: '其他',
+  FREE_PLAY: 'Free play',
+  CLASS: 'Class activity',
+  CLUB_TRAINING: 'Club training',
+  EVENT: 'School event',
+  EXAM: 'PE exam',
+  OTHER: 'Other',
 }
 
 export const ROLE_LABELS = {
-  ADMIN: '管理员',
-  TEACHER: '教师',
-  STUDENT: '学生',
+  ADMIN: 'Admin',
+  TEACHER: 'Teacher',
+  STUDENT: 'Student',
 }
 
 export const USER_STATUS = {
-  ACTIVE: { label: '正常', type: 'success' },
-  DISABLED: { label: '已禁用', type: 'danger' },
+  ACTIVE: { label: 'Active', type: 'success' },
+  DISABLED: { label: 'Disabled', type: 'danger' },
 }
 
 export function venueTypeLabel(type) {

@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Campus Venue Booking — Design Document</title>
+<style>
+:root {
+  --ink: #16202e; --muted: #5b6b82; --faint: #8b98ab;
+  --line: #dfe6ef; --blue: #2f6fed; --panel: #f7f9fc;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #eef1f6; color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
+  font-size: 16px; line-height: 1.65;
+}
+.page {
+  max-width: 1440px; margin: 40px auto 80px; background: #fff;
+  padding: 60px 72px 72px; border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(22,32,46,.08), 0 20px 60px rgba(22,32,46,.07);
+}
+.page > h1 {
+  font-size: 36px; line-height: 1.2; margin: 0 0 8px; letter-spacing: -0.6px;
+}
+.page > h1 + ol { columns: 2; column-gap: 48px; }
+h2 {
+  font-size: 22px; margin: 56px 0 12px; padding-top: 22px;
+  border-top: 1px solid var(--line); letter-spacing: -0.2px;
+}
+h3 { font-size: 16.5px; margin: 28px 0 8px; }
+p, li { color: #26313f; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code {
+  background: #f2f5fa; border: 1px solid #e4eaf3; border-radius: 4px;
+  padding: 1px 5px; font-size: 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+pre {
+  background: #f8fafd; border: 1px solid var(--line); border-radius: 10px;
+  padding: 16px 18px; overflow-x: auto; font-size: 12.5px; line-height: 1.55;
+}
+pre code { background: none; border: 0; padding: 0; font-size: 12.5px; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0 18px; font-size: 14px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+tr:last-child td { border-bottom: 0; }
+/* text stays at a comfortable measure, figures use the whole page width */
+p, ul, ol, blockquote, pre { max-width: 84ch; }
+figure { margin: 28px 0 34px; }
+.fig {
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+  background: #fff; line-height: 0;
+}
+.fig svg { display: block; width: 100%; height: auto; }
+figcaption {
+  font-size: 12.5px; color: var(--faint); margin-top: 9px; text-align: center;
+}
+blockquote {
+  margin: 18px 0; padding: 12px 20px; border-left: 3px solid var(--blue);
+  background: #f6f9ff; color: #26313f; border-radius: 0 8px 8px 0;
+}
+hr { border: 0; border-top: 1px solid var(--line); margin: 44px 0; }
+em { color: var(--muted); }
+strong { color: var(--ink); }
+@media print {
+  body { background: #fff; }
+  .page { box-shadow: none; margin: 0; padding: 0 24px; max-width: none; border-radius: 0; }
+  h2 { page-break-after: avoid; }
+  figure { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+<h1 id="design-of-a-campus-venue-booking-system">Design of a Campus Venue Booking System</h1>
+<p><strong>Contents</strong></p>
+<ol>
+<li><a href="#1-the-problem">The problem</a></li>
+<li><a href="#2-users-and-capabilities">Users and capabilities</a></li>
+<li><a href="#3-architecture">Architecture</a></li>
+<li><a href="#4-domain-model">Domain model</a></li>
+<li><a href="#5-the-booking-request">The booking request</a></li>
+<li><a href="#6-lifecycle-of-a-booking">Lifecycle of a booking</a></li>
+<li><a href="#7-one-request-layer-by-layer">One request, layer by layer</a></li>
+<li><a href="#8-api-design">API design</a></li>
+<li><a href="#9-security">Security</a></li>
+<li><a href="#10-time-scheduling-and-other-awkward-parts">Time, scheduling and other awkward parts</a></li>
+<li><a href="#11-testing">Testing</a></li>
+<li><a href="#12-limits-and-next-steps">Limits and next steps</a></li>
+</ol>
+<hr />
+<h2 id="1-the-problem">1. The problem</h2>
+<p>A school has six sports venues and one shared timetable. Before this system, booking one meant
+finding the teacher who keeps the paper schedule, and the answer to "is the indoor tennis court
+free on Thursday at four" depended on who you asked.</p>
+<p>Three things make this harder than a calendar app:</p>
+<ul>
+<li><strong>The venues are not interchangeable.</strong> A squash court holds two people; the football pitch
+  holds twenty-two. Capacity and surface decide who can use what.</li>
+<li><strong>Some bookings need a decision.</strong> Two students playing badminton for an hour is routine. A club
+  taking the football pitch every Wednesday, or a PE exam that closes a venue for a morning, is
+  not — someone has to weigh it against everyone else.</li>
+<li><strong>A slot that is booked but unused is worse than a free slot.</strong> If nobody turns up, the venue sat
+  empty while other people were told it was taken. The system has to notice.</li>
+</ul>
+<p>The design below answers those three points: a typed venue catalogue, a two-speed approval rule,
+and a status machine that ends unused bookings on its own.</p>
+<p><strong>Scope.</strong> One school, one database, three roles. No payments, no external calendar sync, no
+multi-tenant isolation. Those are listed in <a href="#12-limits-and-next-steps">§12</a> rather than quietly
+half-built.</p>
+<h2 id="2-users-and-capabilities">2. Users and capabilities</h2>
+<p>Three roles, and the boundaries between them are the whole access model.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1140 660" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1140" height="660" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 1 — Who can do what</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Three roles, seven use cases. A student never sees the approval queue and a teacher never edits a venue.</text>
+<rect x="372" y="108" width="416" height="500" rx="16" fill="#fbfcfe" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="6 5"/>
+<text x="392" y="132" font-size="9.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">CAMPUS VENUE BOOKING</text>
+<ellipse cx="580" cy="172" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="176" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Browse venues and free slots</text>
+<ellipse cx="580" cy="234" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="238" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Create a booking</text>
+<ellipse cx="580" cy="296" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="300" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Cancel own booking</text>
+<ellipse cx="580" cy="358" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="362" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Approve or reject a booking</text>
+<ellipse cx="580" cy="420" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="424" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Check in · mark no-show</text>
+<ellipse cx="580" cy="482" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="486" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Manage venues, users, equipment</text>
+<ellipse cx="580" cy="544" rx="200" ry="25" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="580" y="548" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="middle">Read utilisation reports</text>
+<circle cx="150" cy="250" r="11" fill="none" stroke="#2f6fed" stroke-width="1.6"/>
+<path d="M 150 261 V 290 M 132 272 H 168 M 150 290 L 135 312 M 150 290 L 165 312" stroke="#2f6fed" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="150" y="332" font-size="13" font-weight="700" fill="#2f6fed" text-anchor="middle">Student</text>
+<text x="150" y="348" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">books for themselves or a class</text>
+<circle cx="1010" cy="300" r="11" fill="none" stroke="#c2761a" stroke-width="1.6"/>
+<path d="M 1010 311 V 340 M 992 322 H 1028 M 1010 340 L 995 362 M 1010 340 L 1025 362" stroke="#c2761a" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="1010" y="382" font-size="13" font-weight="700" fill="#c2761a" text-anchor="middle">Teacher</text>
+<text x="1010" y="398" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">owns the approval queue</text>
+<circle cx="1010" cy="470" r="11" fill="none" stroke="#0e9384" stroke-width="1.6"/>
+<path d="M 1010 481 V 510 M 992 492 H 1028 M 1010 510 L 995 532 M 1010 510 L 1025 532" stroke="#0e9384" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<text x="1010" y="552" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle">Admin</text>
+<text x="1010" y="568" font-size="10" font-weight="400" fill="#5b6b82" text-anchor="middle">owns the catalogue</text>
+<path d="M 172.0 300.0 L 290.0 300.0 Q 300.0 300.0 300.0 290.0 L 300.0 182.0 Q 300.0 172.0 310.0 172.0 L 378.0 172.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 172.0 300.0 L 290.0 300.0 Q 300.0 300.0 300.0 290.0 L 300.0 244.0 Q 300.0 234.0 310.0 234.0 L 378.0 234.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 172.0 300.0 L 298.0 300.0 Q 300.0 300.0 300.0 298.0 L 300.0 298.0 Q 300.0 296.0 302.0 296.0 L 378.0 296.0" fill="none" stroke="#a9b7c9" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 904.0 350.0 Q 900.0 350.0 900.0 354.0 L 900.0 354.0 Q 900.0 358.0 896.0 358.0 L 782.0 358.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 910.0 350.0 Q 900.0 350.0 900.0 360.0 L 900.0 410.0 Q 900.0 420.0 890.0 420.0 L 782.0 420.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 350.0 L 910.0 350.0 Q 900.0 350.0 900.0 360.0 L 900.0 534.0 Q 900.0 544.0 890.0 544.0 L 782.0 544.0" fill="none" stroke="#dcc39a" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 510.0 L 930.0 492.0 Q 930.0 482.0 920.0 482.0 L 782.0 482.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 510.0 L 930.0 430.0 Q 930.0 420.0 920.0 420.0 L 782.0 420.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<path d="M 988.0 520.0 L 940.0 520.0 Q 930.0 520.0 930.0 530.0 L 930.0 534.0 Q 930.0 544.0 920.0 544.0 L 782.0 544.0" fill="none" stroke="#a4cfc9" stroke-width="1.2"/>
+<text x="44" y="636" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">The same endpoint can be reachable by two roles: a teacher and an admin may both check a class in, but only an admin can create a venue.</text>
+</svg>
+</div><figcaption>Who can do what</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Student</th>
+<th>Teacher</th>
+<th>Admin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Browse venues and availability</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Create a booking</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Cancel own booking</td>
+<td>yes</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>See every booking</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Approve or reject</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Check in, mark no-show</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Manage venues and equipment</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Manage users</td>
+<td>no</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Read reports</td>
+<td>no</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+</tbody>
+</table>
+<p>Two rules are enforced twice, once in the route guard and once in the service. The client check is
+for the user's benefit; the server check is the real one, because the client is just a browser.</p>
+<p>A student can never read another student's booking, even by guessing an id. That is enforced in
+<code>BookingService.checkCanRead</code>, not in the query, so it also holds for <code>GET /api/bookings/{id}</code>.</p>
+<h2 id="3-architecture">3. Architecture</h2>
+<p>Four layers, one direction of travel. A request goes down, a DTO comes back up, and nothing in the
+API layer holds business state.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1160 830" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1160" height="830" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 2 — System architecture</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Four layers, one request path. Everything crossing a layer boundary goes through a DTO.</text>
+<rect x="40" y="112" width="840" height="132" rx="14" fill="#f7f9fc" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="138" font-size="10.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">CLIENT · BROWSER</text>
+<rect x="60" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="186.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Vue 3 SPA</text>
+<text x="186.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">views + Element Plus</text>
+<rect x="333" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="459.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Vue Router</text>
+<text x="459.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">role guards per route</text>
+<rect x="606" y="152" width="253" height="70" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="732.5" y="183.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Axios client</text>
+<text x="732.5" y="201.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">adds Bearer token</text>
+<rect x="40" y="270" width="840" height="166" rx="14" fill="#f7f9fc" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="296" font-size="10.5" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="1.2">API · SPRING MVC</text>
+<rect x="60" y="302" width="799" height="46" rx="8" fill="#eaf1ff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="76" y="330" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Security filter chain</text>
+<text x="222" y="330" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">JwtAuthenticationFilter → SecurityContext → @PreAuthorize-style role checks</text>
+<rect x="60" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="122.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">AuthController</text>
+<rect x="194" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="256.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">VenueController</text>
+<rect x="328" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="390.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">BookingController</text>
+<rect x="462" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="524.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">EquipmentController</text>
+<rect x="596" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="658.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">ReportController</text>
+<rect x="730" y="364" width="124" height="52" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="792.0" y="394.5" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="middle">AdminController</text>
+<rect x="40" y="462" width="840" height="152" rx="14" fill="#faf8ff" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="488" font-size="10.5" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="1.2">DOMAIN SERVICES</text>
+<rect x="60" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="188.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">AuthService</text>
+<text x="188.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">login · register · profile</text>
+<rect x="332" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="460.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">VenueService</text>
+<text x="460.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">catalogue · availability</text>
+<rect x="604" y="496" width="256" height="52" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="732.0" y="518.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">BookingService</text>
+<text x="732.0" y="536.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">conflict check · approval</text>
+<rect x="60" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="188.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">EquipmentService</text>
+<text x="188.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">borrow · return · stock</text>
+<rect x="332" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="460.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">ReportService</text>
+<text x="460.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">utilisation · summary</text>
+<rect x="604" y="556" width="256" height="46" rx="9" fill="#ffffff" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="732.0" y="575.0" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">NotificationService</text>
+<text x="732.0" y="593.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">in-app inbox</text>
+<rect x="40" y="640" width="840" height="120" rx="14" fill="#f6fbfa" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="5 5"/>
+<text x="60" y="666" font-size="10.5" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="1.2">PERSISTENCE</text>
+<rect x="60" y="674" width="236" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="178.0" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Spring Data JPA</text>
+<text x="178.0" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">one repository per aggregate</text>
+<rect x="348" y="674" width="176" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="436.0" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">Hibernate</text>
+<text x="436.0" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">entity mapping</text>
+<rect x="576" y="674" width="283" height="58" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="717.5" y="699.0" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">H2 (dev) / MySQL 8 (prod)</text>
+<text x="717.5" y="717.0" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="middle">same schema, profile switch</text>
+<path d="M 298.0 703.0 L 344.0 703.0" fill="none" stroke="#0e9384" stroke-width="1.4" marker-end="url(#art)"/>
+<path d="M 526.0 703.0 L 572.0 703.0" fill="none" stroke="#0e9384" stroke-width="1.4" marker-end="url(#art)"/>
+<path d="M 460.0 244.0 L 460.0 266.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="259.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">HTTPS · JSON</text>
+<path d="M 460.0 436.0 L 460.0 458.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="451.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">method call</text>
+<path d="M 460.0 614.0 L 460.0 636.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="472" y="629.0" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">query</text>
+<text x="900" y="96" font-size="10.5" font-weight="700" fill="#d1435f" text-anchor="start" letter-spacing="1.2">CROSS-CUTTING</text>
+<rect x="900" y="112" width="220" height="128" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="138" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">JwtService</text>
+<text x="916" y="158" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">HS256 sign / verify</text>
+<text x="916" y="174" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">hand-rolled, no lib</text>
+<path d="M 898.0 176.0 L 886.0 176.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="258" width="220" height="104" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="284" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Scheduler</text>
+<text x="916" y="304" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">@Scheduled sweep</text>
+<text x="916" y="320" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">closes stale bookings</text>
+<path d="M 898.0 310.0 L 886.0 310.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="380" width="220" height="118" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="406" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">AuditService</text>
+<text x="916" y="426" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">append-only trail</text>
+<text x="916" y="442" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">actor · action · target</text>
+<path d="M 898.0 439.0 L 886.0 439.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<rect x="900" y="516" width="220" height="118" rx="10" fill="#ffffff" stroke="#d1435f" stroke-width="1.2"/>
+<text x="916" y="542" font-size="12.5" font-weight="700" fill="#16202e" text-anchor="start">Exception handler</text>
+<text x="916" y="562" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">one error envelope</text>
+<text x="916" y="578" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">for every failure</text>
+<path d="M 898.0 575.0 L 886.0 575.0" fill="none" stroke="#d1435f" stroke-width="1.1" marker-end="url(#arr)" stroke-dasharray="3 3"/>
+<text x="44" y="800" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">Requests only move downward. Notifications and audit writes are side effects of a service call, so the API layer never holds business state.</text>
+</svg>
+</div><figcaption>System architecture</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Holds</th>
+<th>Does not hold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Client (Vue 3)</td>
+<td>views, route guards, token, formatting</td>
+<td>business rules</td>
+</tr>
+<tr>
+<td>API (Spring MVC)</td>
+<td>routing, validation, role checks, HTTP shape</td>
+<td>queries, transactions</td>
+</tr>
+<tr>
+<td>Service</td>
+<td>rules, conflict detection, state transitions, notifications</td>
+<td>HTTP concepts</td>
+</tr>
+<tr>
+<td>Persistence (JPA)</td>
+<td>mapping, queries</td>
+<td>decisions</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why this split.</strong> The rules that matter — overlap, approval, no-show — are the ones that must
+survive a UI rewrite. Putting them behind a service interface means the Vue client can be replaced
+without touching them, and the integration test can call them through HTTP without a browser.</p>
+<p><strong>Why entities never leave the service.</strong> Each layer boundary is a DTO (<code>VenueDto</code>, <code>BookingDto</code>,
+…). Returning a JPA entity would leak lazy state and let a client see fields it should not. The
+mapping is boring code, which is exactly what you want at a boundary.</p>
+<p><strong>Cross-cutting pieces</strong> sit to the side rather than inside the layers:</p>
+<ul>
+<li><code>JwtService</code> + <code>JwtAuthenticationFilter</code> — issue and verify tokens, fill the security context.</li>
+<li><code>GlobalExceptionHandler</code> — one place that turns an exception into an error envelope.</li>
+<li><code>AuditService</code> — append-only trail, called by the services that change state.</li>
+<li><code>SchedulerService</code> — the only thing that writes without a user behind it.</li>
+</ul>
+<h3 id="request-path">Request path</h3>
+<ol>
+<li>Vite proxies <code>/api</code> to <code>:8080</code> in development; in production nginx serves the static build and
+   proxies the same prefix, so the client never learns the API's real origin.</li>
+<li><code>JwtAuthenticationFilter</code> reads the <code>Authorization</code> header, verifies the signature, and puts an
+   <code>AuthUser</code> in the security context. A bad token is ignored, not rejected — the request simply
+   continues as anonymous and the authorization rules decide what happens next.</li>
+<li>The controller validates the body (<code>@Valid</code>), calls one service method, and wraps the result in
+   <code>ApiResponse</code>.</li>
+<li>The service does the work inside a transaction where it writes more than once.</li>
+<li>Exceptions travel back through <code>GlobalExceptionHandler</code> and become <code>ApiError</code>.</li>
+</ol>
+<h2 id="4-domain-model">4. Domain model</h2>
+<p>Ten tables. There is no join table anywhere, because every relationship in this domain is
+one-to-many and the child can hold the foreign key.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1580 960" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1580" height="960" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 3 — Entity–relationship diagram</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Ten tables. No join table: every relationship is one-to-many and lives on the child side.</text>
+<rect x="40" y="120" width="300" height="154" rx="8" fill="#ffffff" stroke="#d1435f" stroke-width="1.4"/>
+<path d="M 40 154 h 300" stroke="#d1435f" stroke-width="1.2"/>
+<text x="52" y="142" font-size="12" font-weight="700" fill="#d1435f" text-anchor="start" letter-spacing="0.5">NOTIFICATIONS</text>
+<text x="52" y="170" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="74" y="170" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="328" y="170" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="41" y="175" width="298" height="18" fill="#f8fafd"/>
+<text x="52" y="188" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="74" y="188" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">user_id</text>
+<text x="328" y="188" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="74" y="206" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">type</text>
+<text x="328" y="206" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<rect x="41" y="211" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="224" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">title</text>
+<text x="328" y="224" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="74" y="242" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">is_read</text>
+<text x="328" y="242" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BOOLEAN</text>
+<rect x="41" y="247" width="298" height="18" fill="#f8fafd"/>
+<text x="52" y="260" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="74" y="260" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">related_booking_id</text>
+<text x="328" y="260" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="440" y="120" width="300" height="118" rx="8" fill="#ffffff" stroke="#0e9384" stroke-width="1.4"/>
+<path d="M 440 154 h 300" stroke="#0e9384" stroke-width="1.2"/>
+<text x="452" y="142" font-size="12" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="0.5">SCHOOL_CLASSES</text>
+<text x="452" y="170" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="474" y="170" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="728" y="170" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="175" width="298" height="18" fill="#f8fafd"/>
+<text x="474" y="188" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">name</text>
+<text x="728" y="188" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="474" y="206" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">grade</text>
+<text x="728" y="206" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="441" y="211" width="298" height="18" fill="#f8fafd"/>
+<text x="452" y="224" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="224" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">head_teacher_id</text>
+<text x="728" y="224" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="840" y="120" width="300" height="136" rx="8" fill="#ffffff" stroke="#0e9384" stroke-width="1.4"/>
+<path d="M 840 154 h 300" stroke="#0e9384" stroke-width="1.2"/>
+<text x="852" y="142" font-size="12" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="0.5">VENUE_SCHEDULES</text>
+<text x="852" y="170" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="874" y="170" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="1128" y="170" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="841" y="175" width="298" height="18" fill="#f8fafd"/>
+<text x="852" y="188" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="874" y="188" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">venue_id</text>
+<text x="1128" y="188" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="874" y="206" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">weekday</text>
+<text x="1128" y="206" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">INT 1-7</text>
+<rect x="841" y="211" width="298" height="18" fill="#f8fafd"/>
+<text x="874" y="224" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">start_time</text>
+<text x="1128" y="224" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIME</text>
+<text x="874" y="242" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">end_time</text>
+<text x="1128" y="242" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIME</text>
+<rect x="40" y="360" width="300" height="190" rx="8" fill="#ffffff" stroke="#2f6fed" stroke-width="1.4"/>
+<path d="M 40 394 h 300" stroke="#2f6fed" stroke-width="1.2"/>
+<text x="52" y="382" font-size="12" font-weight="700" fill="#2f6fed" text-anchor="start" letter-spacing="0.5">USERS</text>
+<text x="52" y="410" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="74" y="410" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="328" y="410" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="41" y="415" width="298" height="18" fill="#f8fafd"/>
+<text x="52" y="428" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="74" y="428" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">class_id</text>
+<text x="328" y="428" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="74" y="446" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">username</text>
+<text x="328" y="446" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="41" y="451" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="464" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">password_hash</text>
+<text x="328" y="464" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="74" y="482" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">real_name</text>
+<text x="328" y="482" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="41" y="487" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="500" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">role</text>
+<text x="328" y="500" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<text x="74" y="518" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">status</text>
+<text x="328" y="518" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<rect x="41" y="523" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="536" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">created_at</text>
+<text x="328" y="536" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIMESTAMP</text>
+<rect x="440" y="340" width="300" height="208" rx="8" fill="#ffffff" stroke="#7a5af0" stroke-width="1.4"/>
+<path d="M 440 374 h 300" stroke="#7a5af0" stroke-width="1.2"/>
+<text x="452" y="362" font-size="12" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.5">BOOKINGS</text>
+<text x="452" y="390" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="474" y="390" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="728" y="390" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="395" width="298" height="18" fill="#f8fafd"/>
+<text x="452" y="408" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="408" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">user_id</text>
+<text x="728" y="408" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="452" y="426" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="426" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">venue_id</text>
+<text x="728" y="426" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="431" width="298" height="18" fill="#f8fafd"/>
+<text x="452" y="444" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="444" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">class_id</text>
+<text x="728" y="444" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="452" y="462" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="462" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">club_id</text>
+<text x="728" y="462" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="467" width="298" height="18" fill="#f8fafd"/>
+<text x="474" y="480" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">booking_date</text>
+<text x="728" y="480" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">DATE</text>
+<text x="474" y="498" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">start_time</text>
+<text x="728" y="498" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIME</text>
+<rect x="441" y="503" width="298" height="18" fill="#f8fafd"/>
+<text x="474" y="516" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">end_time</text>
+<text x="728" y="516" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIME</text>
+<text x="474" y="534" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">status</text>
+<text x="728" y="534" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<rect x="840" y="340" width="300" height="190" rx="8" fill="#ffffff" stroke="#0e9384" stroke-width="1.4"/>
+<path d="M 840 374 h 300" stroke="#0e9384" stroke-width="1.2"/>
+<text x="852" y="362" font-size="12" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="0.5">VENUES</text>
+<text x="852" y="390" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="874" y="390" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="1128" y="390" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="841" y="395" width="298" height="18" fill="#f8fafd"/>
+<text x="874" y="408" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">name</text>
+<text x="1128" y="408" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="874" y="426" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">type</text>
+<text x="1128" y="426" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<rect x="841" y="431" width="298" height="18" fill="#f8fafd"/>
+<text x="874" y="444" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">indoor</text>
+<text x="1128" y="444" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BOOLEAN</text>
+<text x="874" y="462" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">building</text>
+<text x="1128" y="462" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="841" y="467" width="298" height="18" fill="#f8fafd"/>
+<text x="874" y="480" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">capacity</text>
+<text x="1128" y="480" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">INT</text>
+<text x="874" y="498" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">open_time</text>
+<text x="1128" y="498" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIME</text>
+<rect x="841" y="503" width="298" height="18" fill="#f8fafd"/>
+<text x="874" y="516" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">status</text>
+<text x="1128" y="516" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">ENUM</text>
+<rect x="1240" y="360" width="300" height="118" rx="8" fill="#ffffff" stroke="#0e9384" stroke-width="1.4"/>
+<path d="M 1240 394 h 300" stroke="#0e9384" stroke-width="1.2"/>
+<text x="1252" y="382" font-size="12" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="0.5">CLUBS</text>
+<text x="1252" y="410" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="1274" y="410" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="1528" y="410" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="1241" y="415" width="298" height="18" fill="#f8fafd"/>
+<text x="1274" y="428" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">name</text>
+<text x="1528" y="428" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="1274" y="446" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">type</text>
+<text x="1528" y="446" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="1241" y="451" width="298" height="18" fill="#f8fafd"/>
+<text x="1252" y="464" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="1274" y="464" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">leader_user_id</text>
+<text x="1528" y="464" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="40" y="640" width="300" height="154" rx="8" fill="#ffffff" stroke="#d1435f" stroke-width="1.4"/>
+<path d="M 40 674 h 300" stroke="#d1435f" stroke-width="1.2"/>
+<text x="52" y="662" font-size="12" font-weight="700" fill="#d1435f" text-anchor="start" letter-spacing="0.5">AUDIT_LOGS</text>
+<text x="52" y="690" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="74" y="690" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="328" y="690" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="41" y="695" width="298" height="18" fill="#f8fafd"/>
+<text x="52" y="708" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="74" y="708" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">actor_id</text>
+<text x="328" y="708" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="74" y="726" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">action</text>
+<text x="328" y="726" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<rect x="41" y="731" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="744" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">target_type</text>
+<text x="328" y="744" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="74" y="762" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">target_id</text>
+<text x="328" y="762" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="41" y="767" width="298" height="18" fill="#f8fafd"/>
+<text x="74" y="780" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">created_at</text>
+<text x="328" y="780" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIMESTAMP</text>
+<rect x="440" y="640" width="300" height="154" rx="8" fill="#ffffff" stroke="#d1435f" stroke-width="1.4"/>
+<path d="M 440 674 h 300" stroke="#d1435f" stroke-width="1.2"/>
+<text x="452" y="662" font-size="12" font-weight="700" fill="#d1435f" text-anchor="start" letter-spacing="0.5">EQUIPMENT_BORROWS</text>
+<text x="452" y="690" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="474" y="690" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="728" y="690" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="695" width="298" height="18" fill="#f8fafd"/>
+<text x="452" y="708" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="708" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">booking_id</text>
+<text x="728" y="708" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<text x="452" y="726" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="474" y="726" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">equipment_id</text>
+<text x="728" y="726" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="441" y="731" width="298" height="18" fill="#f8fafd"/>
+<text x="474" y="744" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">qty</text>
+<text x="728" y="744" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">INT</text>
+<text x="474" y="762" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">returned</text>
+<text x="728" y="762" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BOOLEAN</text>
+<rect x="441" y="767" width="298" height="18" fill="#f8fafd"/>
+<text x="474" y="780" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">borrowed_at</text>
+<text x="728" y="780" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">TIMESTAMP</text>
+<rect x="1240" y="640" width="300" height="136" rx="8" fill="#ffffff" stroke="#0e9384" stroke-width="1.4"/>
+<path d="M 1240 674 h 300" stroke="#0e9384" stroke-width="1.2"/>
+<text x="1252" y="662" font-size="12" font-weight="700" fill="#0e9384" text-anchor="start" letter-spacing="0.5">EQUIPMENT</text>
+<text x="1252" y="690" font-size="9" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="0.4">PK</text>
+<text x="1274" y="690" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">id</text>
+<text x="1528" y="690" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="1241" y="695" width="298" height="18" fill="#f8fafd"/>
+<text x="1274" y="708" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">name</text>
+<text x="1528" y="708" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">VARCHAR</text>
+<text x="1252" y="726" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start" letter-spacing="0.4">FK</text>
+<text x="1274" y="726" font-size="11.5" font-weight="600" fill="#16202e" text-anchor="start">venue_id</text>
+<text x="1528" y="726" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">BIGINT</text>
+<rect x="1241" y="731" width="298" height="18" fill="#f8fafd"/>
+<text x="1274" y="744" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">total_qty</text>
+<text x="1528" y="744" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">INT</text>
+<text x="1274" y="762" font-size="11.5" font-weight="400" fill="#5b6b82" text-anchor="start">available</text>
+<text x="1528" y="762" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="end">INT</text>
+<path d="M 340.0 440.0 L 440.0 440.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 440.0 440.0 L 428.0 433.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 440.0 440.0 L 428.0 440.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 440.0 440.0 L 428.0 447.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 340.0 446.0 L 340.0 434.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 740.0 440.0 L 840.0 440.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 840.0 434.0 L 840.0 446.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 740.0 440.0 L 752.0 447.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 740.0 440.0 L 752.0 440.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 740.0 440.0 L 752.0 433.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 190.0 360.0 L 190.0 272.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 190.0 272.0 L 183.0 284.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 190.0 272.0 L 190.0 284.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 190.0 272.0 L 197.0 284.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 196.0 360.0 L 184.0 360.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 300.0 360.0 L 480.0 236.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 476.6 231.1 L 483.4 240.9" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 300.0 360.0 L 313.9 359.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 300.0 360.0 L 309.9 353.2" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 300.0 360.0 L 305.9 347.4" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 520.0 340.0 L 520.0 236.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 514.0 236.0 L 526.0 236.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 520.0 340.0 L 527.0 328.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 520.0 340.0 L 520.0 328.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 520.0 340.0 L 513.0 328.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 700.0 550.0 L 700.0 588.0 Q 700.0 600.0 712.0 600.0 L 1288.0 600.0 Q 1300.0 600.0 1300.0 588.0 L 1300.0 476.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 1294.0 476.0 L 1306.0 476.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 700.0 550.0 L 693.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 700.0 550.0 L 700.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 700.0 550.0 L 707.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 990.0 340.0 L 990.0 254.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 990.0 254.0 L 983.0 266.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 990.0 254.0 L 990.0 266.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 990.0 254.0 L 997.0 266.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 996.0 340.0 L 984.0 340.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 1120.0 530.0 L 1240.0 660.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 1240.0 660.0 L 1237.0 646.4" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 1240.0 660.0 L 1231.9 651.2" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 1240.0 660.0 L 1226.7 655.9" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 1115.6 534.1 L 1124.4 525.9" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 1240.0 700.0 L 740.0 700.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 740.0 700.0 L 752.0 707.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 740.0 700.0 L 752.0 700.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 740.0 700.0 L 752.0 693.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 1240.0 694.0 L 1240.0 706.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 190.0 550.0 L 190.0 640.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 190.0 640.0 L 197.0 628.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 190.0 640.0 L 190.0 628.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 190.0 640.0 L 183.0 628.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 184.0 550.0 L 196.0 550.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 540.0 550.0 L 540.0 640.0" fill="none" stroke="#7f8ea3" stroke-width="1.5"/>
+<path d="M 546.0 640.0 L 534.0 640.0" stroke="#7f8ea3" stroke-width="1.6"/>
+<path d="M 540.0 550.0 L 533.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 540.0 550.0 L 540.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<path d="M 540.0 550.0 L 547.0 562.0" stroke="#7f8ea3" stroke-width="1.3"/>
+<rect x="840" y="800" width="300" height="104" rx="8" fill="#f7f9fc" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 4"/>
+<text x="854" y="822" font-size="9.5" font-weight="700" fill="#5b6b82" text-anchor="start" letter-spacing="1.1">LEGEND</text>
+<text x="854" y="844" font-size="9" font-weight="700" fill="#16202e" text-anchor="start">PK</text>
+<text x="884" y="844" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">primary key</text>
+<text x="980" y="844" font-size="9" font-weight="700" fill="#7a5af0" text-anchor="start">FK</text>
+<text x="1010" y="844" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">foreign key</text>
+<text x="854" y="870" font-size="13" font-weight="700" fill="#7f8ea3" text-anchor="start">┤</text>
+<text x="866" y="870" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">one</text>
+<text x="910" y="870" font-size="13" font-weight="700" fill="#7f8ea3" text-anchor="start">─&lt;</text>
+<text x="936" y="870" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">many · child holds the FK</text>
+<text x="854" y="892" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="start">sport types: volleyball · badminton · football · tennis · squash</text>
+<text x="44" y="916" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">BOOKINGS is the only table that grows fast. Everything else is reference data, so read-heavy reports can cache the joins.</text>
+</svg>
+</div><figcaption>Entity-relationship diagram</figcaption></figure>
+<h3 id="the-centre-bookings">The centre: <code>bookings</code></h3>
+<p>One row per request, and the only table that grows quickly. Everything a decision needs is copied
+onto the row — the venue, the date, the time window, who asked, why, and how many people. Nothing
+about a booking is derived from the venue at read time, because the venue can change later and a
+booking should still say what was agreed.</p>
+<p>Time is stored as a <strong>date plus two local times</strong>, not as two timestamps. A school day is a local
+concept: 16:00 means 16:00 in the school's timezone, and daylight saving should not move a booking
+by an hour. Converting to an instant happens only for audit fields (<code>approvedAt</code>, <code>checkInAt</code>).</p>
+<h3 id="reference-data">Reference data</h3>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Why it exists</th>
+<th>Notable constraint</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>venues</code></td>
+<td>catalogue: type, indoor, building, capacity, hours, rules</td>
+<td><code>status</code> blocks booking without deleting history</td>
+</tr>
+<tr>
+<td><code>venue_schedules</code></td>
+<td>recurring weekly windows, one row per weekday</td>
+<td>a booking is only offered inside a window</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>accounts with a role and a status</td>
+<td><code>username</code> unique, password stored as a BCrypt hash</td>
+</tr>
+<tr>
+<td><code>school_classes</code></td>
+<td>the class a student belongs to</td>
+<td>a class booking is a group booking</td>
+</tr>
+<tr>
+<td><code>clubs</code></td>
+<td>after-school clubs</td>
+<td>a club booking always needs approval</td>
+</tr>
+<tr>
+<td><code>equipment</code></td>
+<td>rackets and balls per venue, with a stock counter</td>
+<td><code>available &lt;= total</code></td>
+</tr>
+<tr>
+<td><code>equipment_borrows</code></td>
+<td>stock lent against a booking</td>
+<td>returning is idempotent</td>
+</tr>
+<tr>
+<td><code>notifications</code></td>
+<td>in-app inbox</td>
+<td><code>is_read</code> per row, not per user</td>
+</tr>
+<tr>
+<td><code>audit_logs</code></td>
+<td>who changed what, when</td>
+<td>written by the service, never edited</td>
+</tr>
+</tbody>
+</table>
+<h3 id="invariants-the-code-relies-on">Invariants the code relies on</h3>
+<ul>
+<li>A booking's window lies inside the venue's opening hours <em>and</em> inside a <code>venue_schedules</code> window
+  for that weekday.</li>
+<li>No two bookings with status <code>PENDING</code> or <code>APPROVED</code> overlap on the same venue and date.</li>
+<li><code>REJECTED</code> and <code>CANCELLED</code> never block a slot, which is what makes "cancel and rebook" work.</li>
+<li>A booking in a terminal state never changes again — every transition method checks the current
+  status first.</li>
+</ul>
+<h3 id="why-not-a-booking_slots-table">Why not a <code>booking_slots</code> table</h3>
+<p>The obvious alternative is to materialise every hour as a row and mark it taken. It makes the
+overlap query trivial and the writes complicated: creating a two-hour booking means inserting two
+rows, cancelling means deleting them, and partial failures leave gaps. With a campus-sized dataset
+(tens of thousands of rows a year), an overlap query on <code>(venue_id, booking_date)</code> is fast enough,
+and the state lives in one place.</p>
+<h2 id="5-the-booking-request">5. The booking request</h2>
+<p>A request passes four checks in a fixed order, cheapest first, and every failed check returns
+before anything is written.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1300 1170" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1300" height="1170" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 4 — Booking request flow</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">One request, four checks, two ways out. Rejection and conflict are decided before anything is written.</text>
+<rect x="415" y="96" width="350" height="54" rx="27.0" fill="#2f6fed" stroke="sees the weekly timetable and the free slots" stroke-width="1.4"/>
+<text x="590.0" y="127.5" font-size="#ffffff" font-weight="700" fill="#16202e" text-anchor="middle">Student picks a venue</text>
+<path d="M 590.0 150.0 L 590.0 186.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<rect x="400.0" y="186" width="380" height="66" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="418.0" y="214" font-size="13" font-weight="600" fill="#16202e" text-anchor="start">POST /api/bookings</text>
+<text x="418.0" y="234" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="start">venue · date · start · end · purpose · head count</text>
+<path d="M 590.0 252.0 L 590.0 276.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<polygon points="590,276.0 770.0,330 590,384.0 410.0,330" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.4"/>
+<text x="590" y="326" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">Venue open and slot</text>
+<text x="590" y="342" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">inside opening hours?</text>
+<path d="M 590.0 384.0 L 590.0 412.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="598" y="404" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="start">yes</text>
+<path d="M 410.0 330.0 L 384.0 330.0" fill="none" stroke="#d1435f" stroke-width="1.4" marker-end="url(#arr)"/>
+<text x="422" y="320" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">no</text>
+<rect x="40" y="304" width="340" height="52" rx="9" fill="#fdeef1" stroke="#d1435f" stroke-width="1.3"/>
+<text x="56" y="328" font-size="12.5" font-weight="700" fill="#d1435f" text-anchor="start">400 Bad Request</text>
+<text x="56" y="346" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">venue closed, or the slot is outside hours</text>
+<polygon points="590,412.0 770.0,466 590,520.0 410.0,466" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.4"/>
+<text x="590" y="462" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">Slot already taken by an</text>
+<text x="590" y="478" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">active booking?</text>
+<path d="M 590.0 520.0 L 590.0 548.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="598" y="540" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="start">no</text>
+<path d="M 410.0 466.0 L 384.0 466.0" fill="none" stroke="#d1435f" stroke-width="1.4" marker-end="url(#arr)"/>
+<text x="422" y="456" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">yes</text>
+<rect x="40" y="440" width="340" height="52" rx="9" fill="#fdeef1" stroke="#d1435f" stroke-width="1.3"/>
+<text x="56" y="464" font-size="12.5" font-weight="700" fill="#d1435f" text-anchor="start">409 Conflict</text>
+<text x="56" y="482" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">PENDING and APPROVED both block the slot</text>
+<polygon points="590,544.0 780.0,602 590,660.0 400.0,602" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.4"/>
+<text x="590" y="598" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">Club, class, event, exam</text>
+<text x="590" y="614" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">or 10+ people?</text>
+<path d="M 590.0 660.0 L 590.0 690.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<text x="598" y="682" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="start">no</text>
+<path d="M 780.0 602.0 L 820.0 602.0" fill="none" stroke="#c2761a" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="792" y="592" font-size="10.5" font-weight="600" fill="#c2761a" text-anchor="start">yes</text>
+<rect x="400.0" y="690" width="380" height="66" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="418.0" y="718" font-size="13" font-weight="600" fill="#16202e" text-anchor="start">APPROVED right away</text>
+<text x="418.0" y="738" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="start">approvedAt = now, approver = the student</text>
+<path d="M 590.0 740.0 L 590.0 768.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<rect x="820" y="572" width="340" height="50" rx="9" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.3"/>
+<text x="990.0" y="602" font-size="13" font-weight="600" fill="#16202e" text-anchor="middle">PENDING · every teacher notified</text>
+<path d="M 990.0 622.0 L 990.0 654.0" fill="none" stroke="#c2761a" stroke-width="1.5" marker-end="url(#ar)"/>
+<polygon points="990.0,654.0 1130.0,706 990.0,758.0 850.0,706" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.4"/>
+<text x="990.0" y="702" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">Teacher decision</text>
+<text x="990.0" y="718" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">in the approvals list?</text>
+<path d="M 850.0 706.0 L 810.0 706.0 Q 796.0 706.0 796.0 720.0 L 796.0 737.0 Q 796.0 745.0 788.0 745.0 L 780.0 745.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)"/>
+<text x="824" y="722" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="start">approve</text>
+<path d="M 990.0 758.0 L 990.0 790.0" fill="none" stroke="#d1435f" stroke-width="1.4" marker-end="url(#arr)"/>
+<text x="1000.0" y="780" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">reject</text>
+<rect x="820" y="790" width="340" height="52" rx="9" fill="#fdeef1" stroke="#d1435f" stroke-width="1.3"/>
+<text x="836" y="814" font-size="12.5" font-weight="700" fill="#d1435f" text-anchor="start">REJECTED</text>
+<text x="836" y="832" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">reason is required, the student sees it</text>
+<rect x="400.0" y="768" width="380" height="66" rx="9" fill="#ffffff" stroke="#0e9384" stroke-width="1.3"/>
+<text x="418.0" y="796" font-size="13" font-weight="600" fill="#16202e" text-anchor="start">Booking is live</text>
+<text x="418.0" y="816" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="start">student sees it in My bookings</text>
+<path d="M 590.0 818.0 L 590.0 846.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<rect x="400.0" y="846" width="380" height="66" rx="9" fill="#ffffff" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="418.0" y="874" font-size="13" font-weight="600" fill="#16202e" text-anchor="start">Student arrives, staff checks in</text>
+<text x="418.0" y="894" font-size="11" font-weight="400" fill="#5b6b82" text-anchor="start">checkInAt = now</text>
+<path d="M 590.0 912.0 L 590.0 940.0" fill="none" stroke="#2f6fed" stroke-width="1.6" marker-end="url(#arb)"/>
+<polygon points="590,940.0 780.0,996 590,1052.0 400.0,996" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.4"/>
+<text x="590" y="992" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">Checked in before</text>
+<text x="590" y="1008" font-size="12.5" font-weight="600" fill="#16202e" text-anchor="middle">the slot ends?</text>
+<path d="M 590.0 1052.0 L 590.0 1078.0" fill="none" stroke="#0e9384" stroke-width="1.6" marker-end="url(#art)"/>
+<text x="598" y="1072" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="start">yes</text>
+<path d="M 780.0 996.0 L 820.0 996.0" fill="none" stroke="#d1435f" stroke-width="1.4" marker-end="url(#arr)"/>
+<text x="792" y="986" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">no</text>
+<rect x="440" y="1072" width="300" height="48" rx="24.0" fill="#0e9384" stroke="None" stroke-width="1.4"/>
+<text x="590.0" y="1100.5" font-size="#e8f7f5" font-weight="700" fill="#16202e" text-anchor="middle">COMPLETED</text>
+<rect x="820" y="966" width="340" height="60" rx="9" fill="#fdeef1" stroke="#d1435f" stroke-width="1.3"/>
+<text x="836" y="990" font-size="12.5" font-weight="700" fill="#d1435f" text-anchor="start">NO_SHOW</text>
+<text x="836" y="1009" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">nightly @Scheduled sweep closes it</text>
+<path d="M 400.0 726.0 L 384.0 726.0" fill="none" stroke="#5b6b82" stroke-width="1.4" marker-end="url(#ar)" stroke-dasharray="4 4"/>
+<text x="394" y="744" font-size="10" font-weight="600" fill="#5b6b82" text-anchor="end">cancel</text>
+<rect x="40" y="674" width="340" height="52" rx="9" fill="#fdeef1" stroke="#d1435f" stroke-width="1.3"/>
+<text x="56" y="698" font-size="12.5" font-weight="700" fill="#d1435f" text-anchor="start">CANCELLED</text>
+<text x="56" y="716" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="start">allowed while PENDING or APPROVED</text>
+<text x="40" y="1140" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">Nothing is written until all three checks pass, so a conflict never leaves a half-made booking behind.</text>
+</svg>
+</div><figcaption>Booking request flow</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Failure</th>
+<th>Why it is here</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>venue exists and is open</td>
+<td><code>400</code></td>
+<td>the cheapest reason to say no</td>
+</tr>
+<tr>
+<td>end after start, inside opening hours</td>
+<td><code>400</code></td>
+<td>a malformed request should not reach a query</td>
+</tr>
+<tr>
+<td>no overlapping active booking</td>
+<td><code>409</code></td>
+<td>the only check that needs the database</td>
+</tr>
+<tr>
+<td>approval needed?</td>
+<td>not a failure, a fork</td>
+<td>decides <code>PENDING</code> vs <code>APPROVED</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The approval rule</strong> lives in one method and reads like a sentence:</p>
+<blockquote>
+<p>A request needs approval when it takes the venue away from other people: a class, a club, an
+event or exam slot, or a group of ten and more.</p>
+</blockquote>
+<p>Small free play is confirmed immediately because a rule that makes two students wait for a teacher
+is a rule people route around. Everything larger gets a human, because that is the only way to
+balance a club against a PE class for the same hour.</p>
+<p><strong>Conflict detection</strong> is a single query:</p>
+<pre><code class="language-sql">select b from Booking b
+ where b.venueId = :venueId
+   and b.bookingDate = :date
+   and b.status not in (REJECTED, CANCELLED)
+   and b.startTime &lt; :end
+   and b.endTime   &gt; :start
+</code></pre>
+<p>The two inequalities are the standard interval-overlap test. Back-to-back bookings (10:00–11:00 and
+11:00–12:00) do not overlap, which is what the school expects.</p>
+<p>There is a real race here: two requests for the same slot, arriving together, both pass the check
+before either commits. The default isolation level does not prevent it. The honest options are a
+unique constraint on the slot, a pessimistic lock on the venue row, or accepting the race at
+campus scale. This build accepts it and says so — see <a href="#12-limits-and-next-steps">§12</a>.</p>
+<h2 id="6-lifecycle-of-a-booking">6. Lifecycle of a booking</h2>
+<p>Six states, and only four transitions that a person can trigger.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1180 470" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1180" height="470" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 5 — Booking status machine</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Six states. Only two of them are ever writable by a teacher, and two are terminal by timeout.</text>
+<rect x="140" y="140" width="200" height="66" rx="10" fill="#fdf3e4" stroke="#c2761a" stroke-width="1.5"/>
+<text x="240.0" y="168" font-size="13" font-weight="700" fill="#c2761a" text-anchor="middle" letter-spacing="0.6">PENDING</text>
+<text x="240.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">waiting for a teacher</text>
+<rect x="520" y="140" width="200" height="66" rx="10" fill="#e8f7f5" stroke="#0e9384" stroke-width="1.5"/>
+<text x="620.0" y="168" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle" letter-spacing="0.6">APPROVED</text>
+<text x="620.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">slot is held</text>
+<rect x="900" y="140" width="200" height="66" rx="10" fill="#ffffff" stroke="#0e9384" stroke-width="1.5"/>
+<text x="1000.0" y="168" font-size="13" font-weight="700" fill="#0e9384" text-anchor="middle" letter-spacing="0.6">COMPLETED</text>
+<text x="1000.0" y="188" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">checked in on time</text>
+<rect x="140" y="300" width="200" height="66" rx="10" fill="#fdeef1" stroke="#d1435f" stroke-width="1.5"/>
+<text x="240.0" y="328" font-size="13" font-weight="700" fill="#d1435f" text-anchor="middle" letter-spacing="0.6">REJECTED</text>
+<text x="240.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">teacher said no</text>
+<rect x="520" y="300" width="200" height="66" rx="10" fill="#eef2f7" stroke="#5b6b82" stroke-width="1.5"/>
+<text x="620.0" y="328" font-size="13" font-weight="700" fill="#5b6b82" text-anchor="middle" letter-spacing="0.6">CANCELLED</text>
+<text x="620.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">owner gave the slot back</text>
+<rect x="900" y="300" width="200" height="66" rx="10" fill="#fdeef1" stroke="#d1435f" stroke-width="1.5"/>
+<text x="1000.0" y="328" font-size="13" font-weight="700" fill="#d1435f" text-anchor="middle" letter-spacing="0.6">NO_SHOW</text>
+<text x="1000.0" y="348" font-size="10.5" font-weight="400" fill="#5b6b82" text-anchor="middle">never checked in</text>
+<circle cx="80" cy="173" r="9" fill="#16202e"/>
+<path d="M 90.0 173.0 L 138.0 173.0" fill="none" stroke="#16202e" stroke-width="1.5" marker-end="url(#ar)"/>
+<text x="96" y="162" font-size="10.5" font-weight="600" fill="#16202e" text-anchor="start">book</text>
+<path d="M 80.0 160.0 L 80.0 122.0 Q 80.0 108.0 94.0 108.0 L 546.0 108.0 Q 560.0 108.0 560.0 122.0 L 560.0 138.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)" stroke-dasharray="5 4"/>
+<text x="300" y="128" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">created without an approval need — auto-approved</text>
+<path d="M 340.0 173.0 L 518.0 173.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)"/>
+<text x="429" y="163" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">teacher approves</text>
+<path d="M 720.0 173.0 L 898.0 173.0" fill="none" stroke="#0e9384" stroke-width="1.5" marker-end="url(#art)"/>
+<text x="809" y="163" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">staff checks in</text>
+<path d="M 240.0 206.0 L 240.0 298.0" fill="none" stroke="#d1435f" stroke-width="1.5" marker-end="url(#arr)"/>
+<text x="250" y="258" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">teacher rejects</text>
+<path d="M 340.0 196.0 L 386.0 196.0 Q 400.0 196.0 400.0 210.0 L 400.0 226.0 Q 400.0 240.0 414.0 240.0 L 566.0 240.0 Q 580.0 240.0 580.0 254.0 L 580.0 298.0" fill="none" stroke="#5b6b82" stroke-width="1.5" marker-end="url(#ar)" stroke-dasharray="4 4"/>
+<text x="430" y="232" font-size="10.5" font-weight="600" fill="#5b6b82" text-anchor="middle">owner cancels</text>
+<path d="M 620.0 206.0 L 620.0 298.0" fill="none" stroke="#5b6b82" stroke-width="1.5" marker-end="url(#ar)" stroke-dasharray="4 4"/>
+<text x="632" y="258" font-size="10.5" font-weight="600" fill="#5b6b82" text-anchor="start">owner cancels</text>
+<path d="M 720.0 190.0 L 806.0 190.0 Q 820.0 190.0 820.0 204.0 L 820.0 319.0 Q 820.0 333.0 834.0 333.0 L 898.0 333.0" fill="none" stroke="#d1435f" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="5 4"/>
+<text x="830" y="250" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">@Scheduled sweep</text>
+<text x="830" y="264" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="start">after end time</text>
+<text x="40" y="432" font-size="11.5" font-weight="400" fill="#8b98ab" text-anchor="start">approve and reject are the only two writes a teacher can make. COMPLETED and NO_SHOW are set by staff or by the nightly sweep.</text>
+</svg>
+</div><figcaption>Booking status machine</figcaption></figure>
+<table>
+<thead>
+<tr>
+<th>From</th>
+<th>To</th>
+<th>Trigger</th>
+<th>Who</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>—</td>
+<td><code>PENDING</code></td>
+<td>create, needs approval</td>
+<td>student</td>
+</tr>
+<tr>
+<td>—</td>
+<td><code>APPROVED</code></td>
+<td>create, small free play</td>
+<td>student (auto)</td>
+</tr>
+<tr>
+<td><code>PENDING</code></td>
+<td><code>APPROVED</code></td>
+<td>approve</td>
+<td>teacher or admin</td>
+</tr>
+<tr>
+<td><code>PENDING</code></td>
+<td><code>REJECTED</code></td>
+<td>reject, with a reason</td>
+<td>teacher or admin</td>
+</tr>
+<tr>
+<td><code>PENDING</code> / <code>APPROVED</code></td>
+<td><code>CANCELLED</code></td>
+<td>cancel</td>
+<td>owner</td>
+</tr>
+<tr>
+<td><code>APPROVED</code></td>
+<td><code>COMPLETED</code></td>
+<td>check in</td>
+<td>teacher or admin</td>
+</tr>
+<tr>
+<td><code>APPROVED</code></td>
+<td><code>NO_SHOW</code></td>
+<td>sweep, past the end time</td>
+<td>scheduler</td>
+</tr>
+</tbody>
+</table>
+<p>Two properties matter:</p>
+<ul>
+<li><strong>Terminal means terminal.</strong> <code>REJECTED</code>, <code>CANCELLED</code>, <code>COMPLETED</code> and <code>NO_SHOW</code> are never written
+  again. <code>COMPLETED</code> is deliberately not "used" — attendance is recorded once, and editing history
+  is a different feature.</li>
+<li><strong>The sweep is the only writer without a user.</strong> It runs every minute, looks for <code>APPROVED</code>
+  bookings whose end time has passed, and marks them <code>NO_SHOW</code> with an audit entry whose actor is
+  <code>null</code>. That null is the honest way to say "nobody did this".</li>
+</ul>
+<p>Cancelling releases equipment: the stock counter goes back up, capped at <code>total</code> so a double
+cancel cannot inflate it.</p>
+<h2 id="7-one-request-layer-by-layer">7. One request, layer by layer</h2>
+<p>The club-booking path, which is the interesting one because it writes twice.</p>
+<figure><div class="fig"><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1340 1010" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1340" height="1010" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 6 — Sequence of a booking that needs approval</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Club booking path: three reads, one write, and a second write only after a teacher decides.</text>
+<rect x="2.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#16202e" stroke-width="1.3"/>
+<text x="90" y="138" font-size="11" font-weight="700" fill="#16202e" text-anchor="middle">Student</text>
+<text x="90" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">browser</text>
+<path d="M 90 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="182.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="270" y="138" font-size="11" font-weight="700" fill="#2f6fed" text-anchor="middle">BookingController</text>
+<text x="270" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@RestController</text>
+<path d="M 270 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="382.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="470" y="138" font-size="11" font-weight="700" fill="#7a5af0" text-anchor="middle">BookingService</text>
+<text x="470" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@Service</text>
+<path d="M 470 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="582.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#0e9384" stroke-width="1.3"/>
+<text x="670" y="138" font-size="11" font-weight="700" fill="#0e9384" text-anchor="middle">VenueRepository</text>
+<text x="670" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">Spring Data</text>
+<path d="M 670 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="772.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#0e9384" stroke-width="1.3"/>
+<text x="860" y="138" font-size="11" font-weight="700" fill="#0e9384" text-anchor="middle">BookingRepository</text>
+<text x="860" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">Spring Data</text>
+<path d="M 860 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="962.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#d1435f" stroke-width="1.3"/>
+<text x="1050" y="138" font-size="11" font-weight="700" fill="#d1435f" text-anchor="middle">NotificationService</text>
+<text x="1050" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@Service</text>
+<path d="M 1050 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="1151.0" y="118" width="168" height="44" rx="8" fill="#f7f9fc" stroke="#c2761a" stroke-width="1.3"/>
+<text x="1235" y="138" font-size="11" font-weight="700" fill="#c2761a" text-anchor="middle">Teacher</text>
+<text x="1235" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">approves later</text>
+<path d="M 1235 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<path d="M 90 200 H 266" stroke="#2f6fed" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="180.0" y="192" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">POST /api/bookings</text>
+<text x="180.0" y="214" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="middle">Bearer token · JSON body</text>
+<path d="M 270 248 H 466" stroke="#7a5af0" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="370.0" y="240" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">create(request, currentUserId)</text>
+<path d="M 470 296 H 666" stroke="#0e9384" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="570.0" y="288" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">findById(venueId)</text>
+<path d="M 670 336 H 474" stroke="#0e9384" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="570.0" y="328" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">venue, status = OPEN</text>
+<path d="M 470 384 H 856" stroke="#0e9384" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="376" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">findOverlapping(venue, date, from, to)</text>
+<path d="M 860 424 H 474" stroke="#0e9384" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="665.0" y="416" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">empty — the slot is free</text>
+<path d="M 470 456 h 42 v 26 h -42" fill="none" stroke="#5b6b82" stroke-width="1.4" marker-end="url(#ar)"/>
+<text x="524" y="470" font-size="10" font-weight="600" fill="#5b6b82" text-anchor="start">needsApproval() → true</text>
+<path d="M 470 522 H 856" stroke="#c2761a" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="514" font-size="10.5" font-weight="600" fill="#c2761a" text-anchor="middle">save(status = PENDING)</text>
+<path d="M 470 566 H 1046" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="760.0" y="558" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">notify every teacher</text>
+<path d="M 1050 606 H 1231" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="1142.5" y="598" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">APPROVAL_REQUIRED</text>
+<path d="M 470 646 H 274" stroke="#7a5af0" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="370.0" y="638" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">BookingDto(PENDING)</text>
+<path d="M 270 678 H 94" stroke="#2f6fed" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="180.0" y="670" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">200 { success, data }</text>
+<path d="M 44 712 H 1296" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="2 5"/>
+<text x="44" y="706" font-size="9.5" font-weight="700" fill="#c2761a" text-anchor="start" letter-spacing="1.1">AFTER THE TEACHER OPENS THE APPROVALS LIST</text>
+<path d="M 1235 752 H 274" stroke="#2f6fed" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="752.5" y="744" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">PATCH /api/bookings/{id}/approve</text>
+<path d="M 270 794 H 466" stroke="#7a5af0" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="370.0" y="786" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">approve(id)</text>
+<path d="M 470 836 H 856" stroke="#c2761a" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="828" font-size="10.5" font-weight="600" fill="#c2761a" text-anchor="middle">save(status = APPROVED, approvedBy, approvedAt)</text>
+<path d="M 470 878 H 1046" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="760.0" y="870" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">notify(student, APPROVED)</text>
+<path d="M 1050 918 H 94" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="570.0" y="910" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">APPROVED</text>
+<path d="M 470 958 H 274" stroke="#7a5af0" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="370.0" y="950" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">BookingDto(APPROVED)</text>
+<text x="44" y="996" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">Two transactions, no long-lived lock. A rejected request never reaches the save call, so a failed booking leaves nothing behind.</text>
+</svg>
+</div><figcaption>Sequence of a booking that needs approval</figcaption></figure>
+<p>The first transaction ends when the request returns <code>PENDING</code>. The second starts when a teacher
+approves. Nothing is locked in between, so a teacher leaving the tab open overnight costs nothing.</p>
+<p>Note what the controller does <em>not</em> do: it does not check whether the venue is open, whether the
+slot is free, or whether approval is needed. It authenticates, validates the shape of the body, and
+delegates.</p>
+<h2 id="8-api-design">8. API design</h2>
+<p>One prefix, one envelope, one error shape. The full endpoint list is in
+<a href="api.md"><code>api.md</code></a>; this section explains the conventions.</p>
+<h3 id="envelope">Envelope</h3>
+<pre><code class="language-json">{ &quot;success&quot;: true, &quot;data&quot;: { }, &quot;message&quot;: &quot;ok&quot;, &quot;timestamp&quot;: &quot;2026-10-21T08:30:00Z&quot; }
+</code></pre>
+<p>Lists are paged and wrapped once more:</p>
+<pre><code class="language-json">{ &quot;success&quot;: true,
+  &quot;data&quot;: { &quot;content&quot;: [], &quot;page&quot;: 0, &quot;size&quot;: 20, &quot;totalElements&quot;: 0, &quot;totalPages&quot;: 0, &quot;last&quot;: true } }
+</code></pre>
+<h3 id="errors">Errors</h3>
+<pre><code class="language-json">{ &quot;success&quot;: false, &quot;error&quot;: { &quot;code&quot;: &quot;CONFLICT&quot;, &quot;message&quot;: &quot;That slot is already booked&quot;, &quot;details&quot;: [] } }
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BAD_REQUEST</code></td>
+<td>400</td>
+<td>the request breaks a rule (closed venue, bad time window)</td>
+</tr>
+<tr>
+<td><code>VALIDATION_ERROR</code></td>
+<td>400</td>
+<td>a field is missing or malformed; <code>details</code> lists them</td>
+</tr>
+<tr>
+<td><code>UNAUTHORIZED</code></td>
+<td>401</td>
+<td>no token, or an expired one</td>
+</tr>
+<tr>
+<td><code>FORBIDDEN</code></td>
+<td>403</td>
+<td>the role or the owner check failed</td>
+</tr>
+<tr>
+<td><code>NOT_FOUND</code></td>
+<td>404</td>
+<td>no such row</td>
+</tr>
+<tr>
+<td><code>CONFLICT</code></td>
+<td>409</td>
+<td>the slot is taken</td>
+</tr>
+<tr>
+<td><code>INTERNAL_ERROR</code></td>
+<td>500</td>
+<td>anything unplanned; the message never leaks internals</td>
+</tr>
+</tbody>
+</table>
+<p>The distinction between <code>400</code> and <code>409</code> is deliberate. <code>400</code> means the request is wrong. <code>409</code> means
+the request was fine but the world changed — the client should re-read availability and let the user
+pick again.</p>
+<h3 id="resources">Resources</h3>
+<p>Verb-first paths for state changes (<code>POST /api/bookings/{id}/approve</code>) rather than <code>PATCH</code> with a
+status field. A status field invites clients to send <code>APPROVED</code> on a booking that is already
+<code>COMPLETED</code>; a named action is a smaller door, and it is easier to guard.</p>
+<h3 id="actions-the-response-advertises">Actions the response advertises</h3>
+<p><code>BookingDto</code> carries <code>canCancel</code> and <code>canApprove</code>, computed on the server from the status and the
+caller. The client renders buttons from those flags instead of re-implementing the state machine in
+JavaScript. Two implementations of the same rule is how UIs drift out of sync with backends.</p>
+<h2 id="9-security">9. Security</h2>
+<p><strong>Authentication.</strong> Email-and-password is not needed here — a school issues accounts. <code>POST
+/api/auth/login</code> returns an HS256 JWT with the user id as subject, the role as a claim, and an
+expiry (24 hours by default). The signature is computed with <code>HmacSHA256</code> over
+<code>base64url(header).base64url(payload)</code>; verification is a constant-time comparison.</p>
+<p>The JWT library was left out on purpose. The token format is thirty lines of code, and writing it
+makes the failure modes visible — including the one this project actually hit: a parser that
+assumed every claim value was a quoted string, which silently rejected every request because <code>iat</code>
+and <code>exp</code> are numbers.</p>
+<p><strong>Passwords.</strong> BCrypt with the default strength from <code>BCryptPasswordEncoder</code>. The hash is never in a
+DTO; <code>UserDto</code> has no password field at all.</p>
+<p><strong>Authorization.</strong> Two layers: the security chain decides whether a request may proceed at all, and
+the service decides whether <em>this</em> user may touch <em>this</em> row. The second layer is the one that
+matters for object-level access, and it is why <code>GET /api/bookings/{id}</code> is safe.</p>
+<p><strong>Transport and origin.</strong> CORS allows exactly one origin from configuration, with credentials off
+because the token travels in a header rather than a cookie. There is no CSRF token for the same
+reason; there is nothing to forge.</p>
+<p><strong>What is deliberately absent.</strong> No refresh tokens (a 24-hour token and a re-login is fine for a
+school), no rate limiting on login, no account lockout. Those belong to a deployment behind a
+gateway, and pretending otherwise in application code is worse than leaving them out.</p>
+<h2 id="10-time-scheduling-and-other-awkward-parts">10. Time, scheduling and other awkward parts</h2>
+<p><strong>Opening hours versus the weekly timetable.</strong> A venue has <code>openTime</code>/<code>closeTime</code> and a set of
+weekly windows. The first is what the sign on the door says; the second is when the venue is
+actually bookable (a pitch may be closed for maintenance on Sunday mornings). Availability is
+generated from the windows, and a booking is validated against both.</p>
+<p><strong>Slot generation.</strong> <code>VenueService.availability</code> walks the requested dates, finds the window for
+that weekday, and slices it into one-hour slots, clipping the last one at the window's end. Bookings
+for the whole range are fetched in one query and matched in memory; an earlier version queried per
+slot, which is fine for a week and embarrassing for a term.</p>
+<p><strong>The sweep.</strong> <code>@Scheduled(fixedDelay = 60_000)</code> looks for approved bookings whose end time has
+passed and marks them <code>NO_SHOW</code>. One minute of latency is invisible to users and keeps the query
+trivial. The sweep is idempotent: it only touches bookings still in <code>APPROVED</code>.</p>
+<p><strong>Timezones.</strong> Everything is a <code>LocalDate</code>/<code>LocalTime</code> in the school's timezone, so the app does not
+depend on the server's. The trade-off is that exporting to another timezone needs an explicit
+conversion at the edge.</p>
+<p><strong>Equipment stock.</strong> <code>available</code> is a counter, not a derived count, because a borrow can be
+returned early and the counter is what the desk looks at. Cancelling restores it. A borrow of more
+than <code>available</code> is rejected before it is written.</p>
+<h2 id="11-testing">11. Testing</h2>
+<p><code>CampusVenueApplicationTests</code> runs against the real Spring context, the real security chain, and
+H2, with <code>MockMvc</code> driving HTTP. One test checks that the context starts; the other walks the whole
+story:</p>
+<pre><code>login admin, student, teacher
+  → admin creates a venue                       200
+  → availability for tomorrow                   200
+  → student books 10:00–11:00 free play         200, APPROVED
+  → same request again                          409
+  → student books 12:00–13:00 club training     200, PENDING
+  → teacher approves                            200, APPROVED
+  → utilisation report contains the venue       total &gt;= 1
+  → student cancels the first booking           200, CANCELLED
+</code></pre>
+<p>That test is worth more than a dozen unit tests here, because every failure this project actually
+had was at a seam: a JSON parser that mis-read numbers, a security filter that authenticated
+nobody, a report ordered differently than the test assumed. All three were invisible to service-level
+tests.</p>
+<p>What is <em>not</em> tested: the frontend (no component tests), the scheduler's timing (only its effect,
+indirectly), and concurrency. Those are honest gaps, listed below.</p>
+<h2 id="12-limits-and-next-steps">12. Limits and next steps</h2>
+<table>
+<thead>
+<tr>
+<th>Limit</th>
+<th>Consequence</th>
+<th>The fix, when it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overlap check races under concurrency</td>
+<td>two simultaneous requests can both win</td>
+<td>a unique index on <code>(venue_id, booking_date, start_time)</code> plus a <code>@Version</code> column</td>
+</tr>
+<tr>
+<td>No schema migrations</td>
+<td><code>ddl-auto</code> is <code>create-drop</code> in dev, <code>validate</code> in prod</td>
+<td>add Flyway and a baseline migration</td>
+</tr>
+<tr>
+<td>No refresh tokens or revocation</td>
+<td>a stolen token is valid until it expires</td>
+<td>shorter expiry plus a revocation list</td>
+</tr>
+<tr>
+<td>Reports are computed per request</td>
+<td>fine for a term, slow for years</td>
+<td>materialise a monthly summary table</td>
+</tr>
+<tr>
+<td>Client checks are advisory</td>
+<td>a determined user can call the API directly</td>
+<td>already handled: the server re-checks everything</td>
+</tr>
+<tr>
+<td>No file upload</td>
+<td>venue photos are URLs, not uploads</td>
+<td>object storage plus a signed URL</td>
+</tr>
+<tr>
+<td>Single school</td>
+<td>one database, one timetable</td>
+<td>tenant id on the reference tables</td>
+</tr>
+</tbody>
+</table>
+<p>The next three things worth building, in order: a Flyway baseline so the schema is not a side
+effect of the entities; the unique index plus optimistic locking for the overlap race; and a
+per-venue calendar export so students can see their bookings outside the app.</p>
+<hr />
+<p><em>Figures in this document are hand-built SVG, in <code>docs/diagrams/</code>. They open in any browser and
+scale without blurring.</em></p>
+</div>
+</body>
+</html>

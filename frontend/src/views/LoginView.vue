@@ -2,15 +2,15 @@
   <div class="login-page">
     <div class="login-card">
       <div class="login-head">
-        <span class="login-title">校园体育场馆预定系统</span>
+        <span class="login-title">Campus Venue Booking</span>
       </div>
-      <p class="login-sub">登录以预订场馆、查看审批与报表</p>
+      <p class="login-sub">Sign in to book a venue, approve requests and read reports</p>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="0" size="large" @submit.prevent="onSubmit">
         <el-form-item prop="username">
-          <el-input v-model="form.username" placeholder="用户名" :prefix-icon="User" />
+          <el-input v-model="form.username" placeholder="Username" :prefix-icon="User" />
         </el-form-item>
         <el-form-item prop="password">
-          <el-input v-model="form.password" :type="passwordVisible ? 'text' : 'password'" placeholder="密码"
+          <el-input v-model="form.password" :type="passwordVisible ? 'text' : 'password'" placeholder="Password"
             :prefix-icon="Lock" @keyup.enter="onSubmit">
             <template #suffix>
               <el-icon class="password-toggle" @click="passwordVisible = !passwordVisible">
@@ -21,14 +21,14 @@
           </el-input>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" class="login-button" :loading="loading" @click="onSubmit">登录</el-button>
+          <el-button type="primary" class="login-button" :loading="loading" @click="onSubmit">Sign in</el-button>
         </el-form-item>
       </el-form>
       <el-collapse class="demo-box">
-        <el-collapse-item title="演示账号">
-          <div class="demo-row"><span>管理员</span><code>admin / admin123</code></div>
-          <div class="demo-row"><span>教师</span><code>teacher / teacher123</code></div>
-          <div class="demo-row"><span>学生</span><code>student / student123</code></div>
+        <el-collapse-item title="Demo accounts">
+          <div class="demo-row"><span>Admin</span><code>admin / admin123</code></div>
+          <div class="demo-row"><span>Teacher</span><code>teacher / teacher123</code></div>
+          <div class="demo-row"><span>Student</span><code>student / student123</code></div>
         </el-collapse-item>
       </el-collapse>
     </div>
@@ -50,8 +50,8 @@ const passwordVisible = ref(false)
 
 const form = reactive({ username: '', password: '' })
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  username: [{ required: true, message: 'Enter your username', trigger: 'blur' }],
+  password: [{ required: true, message: 'Enter your password', trigger: 'blur' }],
 }
 
 async function onSubmit() {
@@ -61,10 +61,10 @@ async function onSubmit() {
   try {
     const res = await authLogin(form.username.trim(), form.password)
     setAuth(res.token, res.user)
-    ElMessage.success(`欢迎，${res.user.realName || res.user.username}`)
+    ElMessage.success(`Welcome, ${res.user.realName || res.user.username}`)
     router.push(homeForRole(res.user.role))
   } catch {
-    // 错误提示由 http 拦截器统一弹出
+    // Errors surface through the HTTP interceptor
   } finally {
     loading.value = false
   }

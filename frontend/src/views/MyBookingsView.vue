@@ -1,40 +1,40 @@
 <template>
   <div>
     <div class="page-head">
-      <h2 class="page-title">我的预订</h2>
-      <span class="page-desc">{{ isStaff ? '可查看全部预订，并可进行到场 / 爽约登记' : '查看并管理你的场馆预订' }}</span>
+      <h2 class="page-title">My bookings</h2>
+      <span class="page-desc">{{ isStaff ? 'See every booking, record check-ins and no-shows' : 'Your bookings, in one place' }}</span>
     </div>
 
     <div class="table-toolbar">
-      <el-select v-model="status" placeholder="全部状态" clearable style="width: 150px" @change="load">
+      <el-select v-model="status" placeholder="All statuses" clearable style="width: 150px" @change="load">
         <el-option v-for="(v, k) in statusOptions" :key="k" :label="v.label" :value="k" />
       </el-select>
-      <el-checkbox v-if="!isStaff" v-model="mineOnly" @change="load">仅看我的</el-checkbox>
-      <el-button type="primary" :icon="Refresh" @click="load">刷新</el-button>
+      <el-checkbox v-if="!isStaff" v-model="mineOnly" @change="load">Only mine</el-checkbox>
+      <el-button type="primary" :icon="Refresh" @click="load">Refresh</el-button>
     </div>
 
     <el-table :data="rows" v-loading="loading" stripe class="book-table">
-      <el-table-column prop="venueName" label="场馆" min-width="120" />
-      <el-table-column label="日期" width="110">
+      <el-table-column prop="venueName" label="Venue" min-width="120" />
+      <el-table-column label="Date" width="110">
         <template #default="{ row }">{{ formatDate(row.bookingDate) }}</template>
       </el-table-column>
-      <el-table-column label="时间" width="140">
+      <el-table-column label="Time" width="140">
         <template #default="{ row }">{{ formatTime(row.startTime) }}–{{ formatTime(row.endTime) }}</template>
       </el-table-column>
-      <el-table-column label="用途" width="130">
+      <el-table-column label="Purpose" width="130">
         <template #default="{ row }"><el-tag effect="plain" size="small">{{ purposeLabel(row.purpose) }}</el-tag></template>
       </el-table-column>
-      <el-table-column prop="attendeesCount" label="人数" width="80" align="center" />
-      <el-table-column label="状态" width="100">
+      <el-table-column prop="attendeesCount" label="People" width="80" align="center" />
+      <el-table-column label="Status" width="100">
         <template #default="{ row }">
           <el-tag :type="bookingStatusOf(row.status).type" size="small">{{ bookingStatusOf(row.status).label }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="Actions" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="row.canCancel" link type="danger" size="small" @click="cancel(row)">取消</el-button>
-          <el-button v-if="isStaff && row.status === 'APPROVED'" link type="success" size="small" @click="checkIn(row)">到场</el-button>
-          <el-button v-if="isStaff && row.status === 'APPROVED'" link type="warning" size="small" @click="noShow(row)">爽约</el-button>
+          <el-button v-if="row.canCancel" link type="danger" size="small" @click="cancel(row)">Cancel</el-button>
+          <el-button v-if="isStaff && row.status === 'APPROVED'" link type="success" size="small" @click="checkIn(row)">Check in</el-button>
+          <el-button v-if="isStaff && row.status === 'APPROVED'" link type="warning" size="small" @click="noShow(row)">No-show</el-button>
           <span v-if="!row.canCancel && !(isStaff && row.status === 'APPROVED')" class="muted">—</span>
         </template>
       </el-table-column>
@@ -63,12 +63,12 @@ const size = ref(15)
 const total = ref(0)
 
 const statusOptions = {
-  PENDING: { label: '待审批' },
-  APPROVED: { label: '已通过' },
-  REJECTED: { label: '已拒绝' },
-  CANCELLED: { label: '已取消' },
-  COMPLETED: { label: '已完成' },
-  NO_SHOW: { label: '爽约' },
+  PENDING: { label: 'Pending' },
+  APPROVED: { label: 'Approved' },
+  REJECTED: { label: 'Rejected' },
+  CANCELLED: { label: 'Cancelled' },
+  COMPLETED: { label: 'Completed' },
+  NO_SHOW: { label: 'No-show' },
 }
 
 async function load() {
@@ -93,20 +93,20 @@ function onPage(p) {
 }
 
 async function cancel(row) {
-  await ElMessageBox.confirm('确定取消该预订？', '取消预订', { type: 'warning' }).catch(() => Promise.reject())
+  await ElMessageBox.confirm('Cancel this booking?', 'Cancel', { type: 'warning' }).catch(() => Promise.reject())
   await cancelBooking(row.id)
-  ElMessage.success('已取消')
+  ElMessage.success('Cancelled')
   load()
 }
 async function checkIn(row) {
   await checkInBooking(row.id)
-  ElMessage.success('已登记到场')
+  ElMessage.success('Checked in')
   load()
 }
 async function noShow(row) {
-  await ElMessageBox.confirm('标记为爽约？', '爽约登记', { type: 'warning' }).catch(() => Promise.reject())
+  await ElMessageBox.confirm('Mark as no-show?', 'No-show', { type: 'warning' }).catch(() => Promise.reject())
   await markNoShowBooking(row.id)
-  ElMessage.success('已标记爽约')
+  ElMessage.success('Marked as no-show')
   load()
 }
 

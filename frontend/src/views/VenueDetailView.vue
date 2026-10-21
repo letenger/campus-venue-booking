@@ -1,6 +1,6 @@
 <template>
   <div v-loading="loading">
-    <el-page-header class="back" @back="router.back()" title="返回" />
+    <el-page-header class="back" @back="router.back()" title="Back" />
 
     <el-card v-if="venue" class="info-card">
       <div class="info-top">
@@ -10,27 +10,27 @@
         </div>
         <div class="info-tags">
           <el-tag effect="plain">{{ venueTypeLabel(venue.type) }}</el-tag>
-          <el-tag effect="plain" type="info">{{ venue.indoor ? '室内' : '室外' }}</el-tag>
-          <el-tag effect="plain" type="info">可容纳 {{ venue.capacity }} 人</el-tag>
+          <el-tag effect="plain" type="info">{{ venue.indoor ? 'Indoor' : 'Outdoor' }}</el-tag>
+          <el-tag effect="plain" type="info">{{ venue.capacity }} people</el-tag>
         </div>
       </div>
       <div class="info-meta">
         <span><el-icon><Location /></el-icon> {{ venue.building }} · {{ venue.location }}</span>
         <span><el-icon><Clock /></el-icon> {{ formatTime(venue.openTime) }} – {{ formatTime(venue.closeTime) }}</span>
       </div>
-      <p v-if="venue.rules" class="rules">使用须知：{{ venue.rules }}</p>
+      <p v-if="venue.rules" class="rules">Rules: {{ venue.rules }}</p>
     </el-card>
 
     <el-card class="avail-card">
       <div class="table-toolbar">
-        <span class="card-title">可预订时段</span>
+        <span class="card-title">Availability</span>
         <el-date-picker v-model="range" type="daterange" value-format="YYYY-MM-DD"
-          :clearable="false" :start-placeholder="'开始日期'" :end-placeholder="'结束日期'"
+          :clearable="false" :start-placeholder="'From'" :end-placeholder="'To'"
           @change="loadAvailability" style="width: 260px" />
       </div>
 
       <div v-for="(day, di) in grouped" :key="di" class="avail-day">
-        <div class="avail-date">{{ formatDate(day.date) }} · 周{{ weekday(day.date) }}</div>
+        <div class="avail-date">{{ formatDate(day.date) }} · {{ weekday(day.date) }}</div>
         <div class="slot-wrap">
           <span v-for="(s, si) in day.slots" :key="si"
             class="slot" :class="slotClass(s)"
@@ -39,44 +39,44 @@
           </span>
         </div>
       </div>
-      <el-empty v-if="grouped.length === 0" description="该时段暂无可排期（场馆未开放或不在开放日内）" />
+      <el-empty v-if="grouped.length === 0" description="No slots this day — the venue is closed or not scheduled" />
     </el-card>
 
     <el-card class="book-card">
-      <span class="card-title">提交预订</span>
+      <span class="card-title">Book this slot</span>
       <el-form :model="form" label-width="92px" class="book-form">
-        <el-form-item label="日期">
+        <el-form-item label="Date">
           <el-date-picker v-model="form.bookingDate" type="date" value-format="YYYY-MM-DD"
-            :disabled-date="disabledDate" placeholder="选择日期" style="width: 200px" />
+            :disabled-date="disabledDate" placeholder="Date" style="width: 200px" />
         </el-form-item>
-        <el-form-item label="开始时间">
+        <el-form-item label="Start">
           <el-time-select v-model="form.startTime" :start="startWindow" :step="'01:00'"
-            :end="endWindow" placeholder="开始" style="width: 130px" />
+            :end="endWindow" placeholder="Start" style="width: 130px" />
         </el-form-item>
-        <el-form-item label="结束时间">
+        <el-form-item label="End">
           <el-time-select v-model="form.endTime" :start="form.startTime || startWindow" :step="'01:00'"
-            :end="endWindow" :min-time="form.startTime" placeholder="结束" style="width: 130px" />
+            :end="endWindow" :min-time="form.startTime" placeholder="End" style="width: 130px" />
         </el-form-item>
-        <el-form-item label="用途">
+        <el-form-item label="Purpose">
           <el-select v-model="form.purpose" style="width: 200px">
             <el-option v-for="(label, key) in purposeOptions" :key="key" :label="label" :value="key" />
           </el-select>
         </el-form-item>
-        <el-form-item label="参与人数">
+        <el-form-item label="People">
           <el-input-number v-model="form.attendeesCount" :min="1" :max="venue?.capacity || 50" />
         </el-form-item>
-        <el-form-item label="班级" v-if="classes.length">
-          <el-select v-model="form.classId" placeholder="可选" clearable style="width: 200px">
+        <el-form-item label="Class" v-if="classes.length">
+          <el-select v-model="form.classId" placeholder="optional" clearable style="width: 200px">
             <el-option v-for="c in classes" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="社团" v-if="clubs.length">
-          <el-select v-model="form.clubId" placeholder="可选" clearable style="width: 200px">
+        <el-form-item label="Club" v-if="clubs.length">
+          <el-select v-model="form.clubId" placeholder="optional" clearable style="width: 200px">
             <el-option v-for="c in clubs" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="submitting" @click="submit">提交预订</el-button>
+          <el-button type="primary" :loading="submitting" @click="submit">Book this slot</el-button>
           <span class="hint">{{ needApprovalHint }}</span>
         </el-form-item>
       </el-form>
@@ -132,9 +132,9 @@ const grouped = computed(() => {
 })
 
 const needApprovalHint = computed(() => {
-  if (['CLUB_TRAINING', 'EVENT', 'EXAM'].includes(form.purpose)) return '该用途需教师审批后生效'
-  if (form.classId || form.clubId || form.attendeesCount >= 10) return '该预订需教师审批后生效'
-  return '小型自由活动将自动通过'
+  if (['CLUB_TRAINING', 'EVENT', 'EXAM'].includes(form.purpose)) return "This purpose needs a teacher's approval"
+  if (form.classId || form.clubId || form.attendeesCount >= 10) return "This request needs a teacher's approval"
+  return 'Small free-play bookings confirm automatically'
 })
 
 function todayStr() {
@@ -152,22 +152,22 @@ function disabledDate(time) {
   return t < lo || t > hi
 }
 function weekday(dateStr) {
-  const names = ['日', '一', '二', '三', '四', '五', '六']
+  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   return names[new Date(dateStr).getDay()]
 }
 function slotClass(s) {
   if (s.available) return 'free'
-  return s.reason === '已被预订' ? 'taken' : 'closed'
+  return s.reason === 'Already booked' ? 'taken' : 'closed'
 }
 function pickSlot(s) {
   if (!s.available) {
-    ElMessage.warning(s.reason || '该时段不可预订')
+    ElMessage.warning(s.reason || 'That slot is not available')
     return
   }
   form.bookingDate = s.date
   form.startTime = s.startTime
   form.endTime = s.endTime
-  ElMessage.info('已填入预订表单，请确认后提交')
+  ElMessage.info('Slot copied into the form — confirm and submit')
 }
 
 async function loadAvailability() {
@@ -177,17 +177,17 @@ async function loadAvailability() {
 
 async function submit() {
   if (!form.bookingDate || !form.startTime || !form.endTime) {
-    ElMessage.warning('请选择日期与时间')
+    ElMessage.warning('Pick a date and a time')
     return
   }
   if (form.endTime <= form.startTime) {
-    ElMessage.warning('结束时间需晚于开始时间')
+    ElMessage.warning('End time must be after start time')
     return
   }
   submitting.value = true
   try {
     const res = await createBooking({ ...form })
-    ElMessage.success(res.status === 'APPROVED' ? '预订已自动通过' : '预订已提交，等待审批')
+    ElMessage.success(res.status === 'APPROVED' ? 'Confirmed automatically' : 'Submitted — waiting for a teacher')
     router.push('/bookings')
   } catch {
     // handled by interceptor

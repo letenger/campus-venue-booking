@@ -9,38 +9,39 @@ const http = axios.create({
 
 http.interceptors.request.use((config) => {
   if (authState.token) {
-    config.headers['Authorization'] = `Bearer ${authState.token}`
+    config.headers.Authorization = `Bearer ${authState.token}`
   }
   return config
 })
 
-// Unwrap the uniform ApiResponse envelope ({ success, data, message }) and
-// surface the inner `data` to callers. On failure, show a message and reject.
+// The API always answers with { success, data } or { success: false, error }.
+// Callers work with the inner data and never see the envelope.
 http.interceptors.response.use(
   (response) => {
     const body = response.data
     if (body && body.success === false) {
-      ElMessage.error(body.message || '请求失败')
-      return Promise.reject(body)
+      ElMessage.error(body.error?.message || 'Request failed')
+      return Promise.reject(body.error)
     }
     return body ? body.data : body
   },
   (error) => {
     const status = error?.response?.status
-    if (status === 401) {
-      // token missing/expired -> force re-login
+    const apiError = error?.response?.data?.error
+    const isLoginCall = (error?.config?.url || '').includes('/auth/login')
+
+    // A 401 anywhere but the login form means the token is gone or expired.
+    if (status === 401 && !isLoginCall) {
       logout()
-      if (location.hash !== '#/login' && location.pathname !== '/login') {
-        ElMessage.error('登录已失效，请重新登录')
+      ElMessage.error('Your session expired, please sign in again')
+      if (!location.pathname.endsWith('/login')) {
         location.href = '/login'
       }
-    } else {
-      const detail = error?.response?.data?.message
-      const message = typeof detail === 'string' ? detail : error.message || '请求失败'
-      if (status !== 403) {
-        ElMessage.error(message)
-      }
+      return Promise.reject(error)
     }
+
+    const details = apiError?.details
+    ElMessage.error(details?.length ? details.join('; ') : apiError?.message || 'Request failed')
     return Promise.reject(error)
   },
 )

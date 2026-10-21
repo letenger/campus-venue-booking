@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="page-head">
-      <h2 class="page-title">通知中心</h2>
-      <el-button type="primary" plain :icon="Check" :disabled="!hasUnread" @click="readAll">全部已读</el-button>
+      <h2 class="page-title">Notifications</h2>
+      <el-button type="primary" plain :icon="Check" :disabled="!hasUnread" @click="readAll">Mark all read</el-button>
     </div>
 
     <el-timeline v-loading="loading">
@@ -11,13 +11,13 @@
         <div class="notif" :class="{ unread: !n.read }" @click="read(n)">
           <div class="notif-title">
             {{ n.title }}
-            <el-tag v-if="!n.read" size="small" type="danger" effect="dark">未读</el-tag>
+            <el-tag v-if="!n.read" size="small" type="danger" effect="dark">unread</el-tag>
           </div>
           <div class="notif-content">{{ n.content }}</div>
         </div>
       </el-timeline-item>
     </el-timeline>
-    <el-empty v-if="!loading && rows.length === 0" description="暂无通知" />
+    <el-empty v-if="!loading && rows.length === 0" description="Nothing here yet" />
   </div>
 </template>
 
@@ -47,7 +47,7 @@ async function read(n) {
 }
 async function readAll() {
   await markAllNotificationsRead()
-  ElMessage.success('已全部标为已读')
+  ElMessage.success('All marked as read')
   load()
 }
 

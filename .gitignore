@@ -1,11 +1,3 @@
-# Python / Django
-__pycache__/
-*.py[cod]
-venv/
-.venv/
-db.sqlite3
-*.log
-
 # Java / Gradle
 *.class
 build/
@@ -20,3 +12,4 @@ dist/
 .idea/
 .vscode/
 .DS_Store
+*.log

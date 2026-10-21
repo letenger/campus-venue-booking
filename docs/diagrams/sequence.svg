@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1340" height="1010" viewBox="0 0 1340 1010" font-family="-apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Segoe UI', Arial, sans-serif">
+<defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#5b6b82"/></marker>
+<marker id="arb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2f6fed"/></marker>
+<marker id="art" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#0e9384"/></marker>
+<marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#d1435f"/></marker>
+<marker id="dot" viewBox="0 0 6 6" refX="3" refY="3" markerWidth="5" markerHeight="5"><circle cx="3" cy="3" r="2.6" fill="#c9d4e3"/></marker>
+</defs>
+<rect width="1340" height="1010" fill="#ffffff"/>
+<text x="44" y="58" font-size="25" font-weight="700" fill="#16202e" text-anchor="start" letter-spacing="-0.3">Figure 6 — Sequence of a booking that needs approval</text>
+<text x="44" y="84" font-size="13.5" font-weight="400" fill="#5b6b82" text-anchor="start">Club booking path: three reads, one write, and a second write only after a teacher decides.</text>
+<rect x="2.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#16202e" stroke-width="1.3"/>
+<text x="90" y="138" font-size="11" font-weight="700" fill="#16202e" text-anchor="middle">Student</text>
+<text x="90" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">browser</text>
+<path d="M 90 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="182.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#2f6fed" stroke-width="1.3"/>
+<text x="270" y="138" font-size="11" font-weight="700" fill="#2f6fed" text-anchor="middle">BookingController</text>
+<text x="270" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@RestController</text>
+<path d="M 270 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="382.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#7a5af0" stroke-width="1.3"/>
+<text x="470" y="138" font-size="11" font-weight="700" fill="#7a5af0" text-anchor="middle">BookingService</text>
+<text x="470" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@Service</text>
+<path d="M 470 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="582.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#0e9384" stroke-width="1.3"/>
+<text x="670" y="138" font-size="11" font-weight="700" fill="#0e9384" text-anchor="middle">VenueRepository</text>
+<text x="670" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">Spring Data</text>
+<path d="M 670 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="772.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#0e9384" stroke-width="1.3"/>
+<text x="860" y="138" font-size="11" font-weight="700" fill="#0e9384" text-anchor="middle">BookingRepository</text>
+<text x="860" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">Spring Data</text>
+<path d="M 860 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="962.0" y="118" width="176" height="44" rx="8" fill="#f7f9fc" stroke="#d1435f" stroke-width="1.3"/>
+<text x="1050" y="138" font-size="11" font-weight="700" fill="#d1435f" text-anchor="middle">NotificationService</text>
+<text x="1050" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">@Service</text>
+<path d="M 1050 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<rect x="1151.0" y="118" width="168" height="44" rx="8" fill="#f7f9fc" stroke="#c2761a" stroke-width="1.3"/>
+<text x="1235" y="138" font-size="11" font-weight="700" fill="#c2761a" text-anchor="middle">Teacher</text>
+<text x="1235" y="153" font-size="9.5" font-weight="400" fill="#5b6b82" text-anchor="middle">approves later</text>
+<path d="M 1235 162 V 690" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="4 5"/>
+<path d="M 90 200 H 266" stroke="#2f6fed" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="180.0" y="192" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">POST /api/bookings</text>
+<text x="180.0" y="214" font-size="9.5" font-weight="400" fill="#8b98ab" text-anchor="middle">Bearer token · JSON body</text>
+<path d="M 270 248 H 466" stroke="#7a5af0" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="370.0" y="240" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">create(request, currentUserId)</text>
+<path d="M 470 296 H 666" stroke="#0e9384" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="570.0" y="288" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">findById(venueId)</text>
+<path d="M 670 336 H 474" stroke="#0e9384" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="570.0" y="328" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">venue, status = OPEN</text>
+<path d="M 470 384 H 856" stroke="#0e9384" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="376" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">findOverlapping(venue, date, from, to)</text>
+<path d="M 860 424 H 474" stroke="#0e9384" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="665.0" y="416" font-size="10.5" font-weight="600" fill="#0e9384" text-anchor="middle">empty — the slot is free</text>
+<path d="M 470 456 h 42 v 26 h -42" fill="none" stroke="#5b6b82" stroke-width="1.4" marker-end="url(#ar)"/>
+<text x="524" y="470" font-size="10" font-weight="600" fill="#5b6b82" text-anchor="start">needsApproval() → true</text>
+<path d="M 470 522 H 856" stroke="#c2761a" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="514" font-size="10.5" font-weight="600" fill="#c2761a" text-anchor="middle">save(status = PENDING)</text>
+<path d="M 470 566 H 1046" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="760.0" y="558" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">notify every teacher</text>
+<path d="M 1050 606 H 1231" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="1142.5" y="598" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">APPROVAL_REQUIRED</text>
+<path d="M 470 646 H 274" stroke="#7a5af0" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="370.0" y="638" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">BookingDto(PENDING)</text>
+<path d="M 270 678 H 94" stroke="#2f6fed" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="180.0" y="670" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">200 { success, data }</text>
+<path d="M 44 712 H 1296" stroke="#c9d4e3" stroke-width="1.2" stroke-dasharray="2 5"/>
+<text x="44" y="706" font-size="9.5" font-weight="700" fill="#c2761a" text-anchor="start" letter-spacing="1.1">AFTER THE TEACHER OPENS THE APPROVALS LIST</text>
+<path d="M 1235 752 H 274" stroke="#2f6fed" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="752.5" y="744" font-size="10.5" font-weight="600" fill="#2f6fed" text-anchor="middle">PATCH /api/bookings/{id}/approve</text>
+<path d="M 270 794 H 466" stroke="#7a5af0" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="370.0" y="786" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">approve(id)</text>
+<path d="M 470 836 H 856" stroke="#c2761a" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="665.0" y="828" font-size="10.5" font-weight="600" fill="#c2761a" text-anchor="middle">save(status = APPROVED, approvedBy, approvedAt)</text>
+<path d="M 470 878 H 1046" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="760.0" y="870" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">notify(student, APPROVED)</text>
+<path d="M 1050 918 H 94" stroke="#d1435f" stroke-width="1.5" fill="none" marker-end="url(#ar)"/>
+<text x="570.0" y="910" font-size="10.5" font-weight="600" fill="#d1435f" text-anchor="middle">APPROVED</text>
+<path d="M 470 958 H 274" stroke="#7a5af0" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+<text x="370.0" y="950" font-size="10.5" font-weight="600" fill="#7a5af0" text-anchor="middle">BookingDto(APPROVED)</text>
+<text x="44" y="996" font-size="12" font-weight="400" fill="#8b98ab" text-anchor="start">Two transactions, no long-lived lock. A rejected request never reaches the save call, so a failed booking leaves nothing behind.</text>
+</svg>
