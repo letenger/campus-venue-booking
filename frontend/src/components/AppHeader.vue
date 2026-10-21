@@ -36,13 +36,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { Bell, ArrowDown, Expand } from '@element-plus/icons-vue'
 import { authState, logout } from '../store/auth'
+import { unreadCount, loadNotifications, resetNotifications } from '../store/notifications'
 import { roleLabel } from '../utils/format'
-import { listNotifications } from '../api'
 
 defineEmits(['open-menu'])
 
@@ -53,18 +53,25 @@ const initial = computed(() => (user.value?.realName || user.value?.username || 
 const title = computed(() => route.meta.title || 'Campus Venue')
 const subtitle = computed(() => route.meta.subtitle || '')
 
-const unread = ref(0)
+const unread = unreadCount
 
-async function refreshUnread() {
-  try {
-    const list = await listNotifications()
-    unread.value = (list || []).filter((n) => !n.read).length
-  } catch {
-    unread.value = 0
-  }
-}
+// Reload the inbox when the account changes, and again on every navigation so the
+// badge reflects anything that happened elsewhere (an approval, a rejection).
+watch(
+  () => authState.user?.id,
+  (id) => {
+    if (id) loadNotifications()
+    else resetNotifications()
+  },
+  { immediate: true },
+)
 
-onMounted(refreshUnread)
+watch(
+  () => route.path,
+  (path) => {
+    if (authState.user?.id && !path.startsWith('/notifications')) loadNotifications()
+  },
+)
 
 async function onCommand(command) {
   if (command === 'notifications') {

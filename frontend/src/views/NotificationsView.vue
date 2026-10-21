@@ -32,16 +32,16 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
-  listNotifications, markNotificationRead, markAllNotificationsRead,
-} from '../api'
+  notificationState, unreadCount, loadNotifications,
+  readNotification, readAllNotifications,
+} from '../store/notifications'
 
-const rows = ref([])
-const loading = ref(false)
-
-const unread = computed(() => rows.value.filter((n) => !n.read).length)
+const rows = computed(() => notificationState.items)
+const loading = computed(() => notificationState.loading)
+const unread = unreadCount
 const hasUnread = computed(() => unread.value > 0)
 
 const KINDS = {
@@ -68,28 +68,16 @@ function relative(value) {
   return days === 1 ? 'yesterday' : `${days} days ago`
 }
 
-async function load() {
-  loading.value = true
-  try {
-    rows.value = (await listNotifications()) || []
-  } finally {
-    loading.value = false
-  }
-}
-
 async function read(n) {
-  if (n.read) return
-  await markNotificationRead(n.id)
-  n.read = true
+  await readNotification(n.id)
 }
 
 async function readAll() {
-  await markAllNotificationsRead()
+  await readAllNotifications()
   ElMessage.success('All marked as read')
-  load()
 }
 
-onMounted(load)
+onMounted(loadNotifications)
 </script>
 
 <style scoped>
