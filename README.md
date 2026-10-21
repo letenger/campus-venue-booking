@@ -4,16 +4,28 @@ A booking and approval system for school sports facilities. Students reserve a c
 teachers decide on the requests that take a venue away from other people, and admins keep the
 catalogue and read utilisation numbers.
 
-Built for the shape of a middle or high school: a handful of venues (volleyball, badminton,
-football, indoor and outdoor tennis, squash, table tennis), one shared weekly timetable, and a lot
-of people who want the same hour after class.
+**[Live demo →](https://campus-venue.app.workbuddy.host/?sharecode=W2TN5KJL5I)** — no setup, no
+account. Sign in as `student` / `student123`, `teacher` / `teacher123` or `admin` / `admin123`.
+The demo is the real Vue client running against an in-memory API, because a static host cannot run
+Spring Boot; see [docs/deploy.md](docs/deploy.md) for the full deployment shape.
 
-**[Open the live preview →](https://campus-venue.app.workbuddy.host/?sharecode=W2TN5KJL5I)**
-Sign in as `student` / `student123`, `teacher` / `teacher123` or `admin` / `admin123`.
-The preview is the real client running against an in-memory API, because Vercel cannot host
-Spring Boot — see [docs/deploy.md](docs/deploy.md) for what runs where.
+![Venue detail with the week availability grid](docs/screenshots/venue-detail.jpg)
 
-![System architecture](docs/diagrams/architecture.svg)
+## Screenshots
+
+| Sign in | Venues |
+| --- | --- |
+| ![Sign in](docs/screenshots/login.jpg) | ![Venue list](docs/screenshots/venues.jpg) |
+
+| My bookings | Approvals |
+| --- | --- |
+| ![My bookings](docs/screenshots/my-bookings.jpg) | ![Approvals](docs/screenshots/approvals.jpg) |
+
+![Reports](docs/screenshots/reports.jpg)
+
+<p align="center">
+  <img src="docs/screenshots/mobile.jpg" width="320" alt="Mobile venue list" />
+</p>
 
 ## What it does
 
@@ -21,9 +33,9 @@ Spring Boot — see [docs/deploy.md](docs/deploy.md) for what runs where.
 - **Weekly timetable** — each venue has recurring open windows per weekday; availability is
   generated as one-hour slots inside them.
 - **Conflict detection** — two active bookings can never overlap on the same venue and date.
-- **Two-speed booking** — small free play is confirmed immediately; class, club, event, exam and
-  any group of ten or more goes to a teacher's queue.
-- **Approval with a paper trail** — approve or reject with a reason, both notify the student.
+- **Two-speed booking** — small free play is confirmed immediately; a class, club, event, exam or
+  any group of ten and more goes to a teacher's queue.
+- **Approval with a reason** — approve or reject, and rejection carries a note the student can read.
 - **Attendance** — staff check a booking in, or the nightly sweep marks the ones nobody used as
   no-shows.
 - **Equipment** — borrow rackets or balls against a booking; cancelling gives the stock back.
@@ -40,7 +52,7 @@ Spring Boot — see [docs/deploy.md](docs/deploy.md) for what runs where.
 | Frontend | Vue 3, Vue Router, Vite, Element Plus, Axios |
 | Tests | JUnit 5 through MockMvc against the real context |
 
-No JWT library, no ORM magic beyond repositories, no state library on the client. The point is a
+No JWT library, no state library on the client, no ORM magic beyond repositories. The point is a
 small number of moving parts that are easy to read.
 
 ## Run it
@@ -69,18 +81,6 @@ empty.
 | `student` | `student123` | Student |
 | `jordan`, `nina` | `student123` | Students with their own bookings |
 
-## Deploy
-
-| Target | What it runs | Command |
-| --- | --- | --- |
-| Vercel, any static host | the client with an in-memory API | `npm run build:demo` |
-| Render, Railway, Fly, Docker | the Spring Boot API | `backend/Dockerfile`, `render.yaml` |
-| Anywhere | both, as one JVM serving the built client | `./gradlew bootJar` |
-
-`docs/deploy.md` has the details, the environment variables and the honest gaps. Nothing is
-hidden behind a platform-specific lock-in: the demo build is one flag (`VITE_DEMO=1`), and the API
-is a jar plus a MySQL URL.
-
 ## Tests
 
 ```bash
@@ -90,6 +90,17 @@ cd backend && ./gradlew test
 `fullBookingFlow` walks the whole story in one run: three logins, a new venue, availability, an
 auto-approved free-play booking, a 409 on the overlapping retry, a club booking that waits, a
 teacher approval, the utilisation report, then a cancellation.
+
+## Deploy
+
+| Target | What it runs | How |
+| --- | --- | --- |
+| Vercel, any static host | the client with an in-memory API | `npm run build:demo` (config in `frontend/vercel.json`) |
+| Render, Railway, Fly, Docker | the Spring Boot API | `backend/Dockerfile`, `render.yaml` |
+| Anywhere | both, one JVM serving the built client | `./gradlew bootJar` |
+
+[docs/deploy.md](docs/deploy.md) has the environment variables, the split-hosting diagram, and the
+gaps that still need work before a real school could run it.
 
 ## Layout
 
@@ -107,7 +118,7 @@ backend/
   src/test/java/com/campus/venue/CampusVenueApplicationTests.java
 frontend/
   src/api/       axios instance and one function per endpoint
-  src/store/     auth state in a reactive object
+  src/store/     auth and notification state
   src/views/     venues, venue detail, my bookings, approvals, admin, reports, notifications
   src/router/    routes with role guards
   src/demo/      in-memory API used by `npm run build:demo`
@@ -118,16 +129,13 @@ docs/
   api.md         endpoint reference
   deploy.md      local, static demo and split hosting
   diagrams/      six SVG figures (architecture, ERD, flow, state machine, sequence, use cases)
-backend/
-  Dockerfile     JDK 25 build, JRE 25 runtime
-render.yaml      Render blueprint for the API
+backend/Dockerfile
+render.yaml
 ```
 
-## API in one line
+## Docs
 
-Everything is JSON over `/api`, authenticated with `Authorization: Bearer <token>`, and wrapped in
-`{ success, data, message, timestamp }`. Failures come back as
-`{ success: false, error: { code, message, details } }`.
-
-See [docs/api.md](docs/api.md) for the endpoints and [docs/design.md](docs/design.md) for the
-reasoning behind them.
+- [docs/design.md](docs/design.md) — architecture, domain model, booking flow, API design and the
+  limits of the current build.
+- [docs/api.md](docs/api.md) — every endpoint, request and error.
+- [docs/deploy.md](docs/deploy.md) — local, static demo, and split hosting.
