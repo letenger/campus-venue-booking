@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, createWebHashHistory } from 'vue-router'
 import { authState, isAuthenticated, homeForRole } from '../store/auth'
 
 import LoginView from '../views/LoginView.vue'
@@ -14,7 +14,7 @@ import ReportsView from '../views/ReportsView.vue'
 
 const routes = [
   { path: '/', redirect: '/venues' },
-  { path: '/login', name: 'login', component: LoginView, meta: { public: true, title: 'Sign in' } },
+  { path: '/login', name: 'login', component: LoginView, meta: { public: true, title: 'Sign in', subtitle: 'Campus sports venue booking' } },
   {
     path: '/',
     component: AppLayout,
@@ -23,58 +23,59 @@ const routes = [
         path: 'venues',
         name: 'venues',
         component: VenuesView,
-        meta: { title: 'Venues', icon: 'House' },
+        meta: { title: 'Venues', subtitle: 'Find a court or a pitch and see what is free', icon: 'House' },
       },
       {
         path: 'venues/:id',
         name: 'venue-detail',
         component: VenueDetailView,
-        meta: { title: 'Venue detail', icon: 'Calendar' },
+        meta: { title: 'Venue detail', subtitle: 'Pick a slot and send the request', icon: 'Calendar' },
       },
       {
         path: 'bookings',
         name: 'my-bookings',
         component: MyBookingsView,
-        meta: { title: 'My bookings', icon: 'Tickets' },
+        meta: { title: 'My bookings', subtitle: 'Everything you booked, and what happened to it', icon: 'Tickets' },
       },
       {
         path: 'approvals',
         name: 'approvals',
         component: ApprovalsView,
-        meta: { title: 'Approvals', icon: 'Stamp', roles: ['TEACHER', 'ADMIN'] },
+        meta: { title: 'Approvals', subtitle: 'Requests waiting for a teacher', icon: 'Stamp', roles: ['TEACHER', 'ADMIN'] },
       },
       {
         path: 'admin/venues',
         name: 'admin-venues',
         component: AdminVenuesView,
-        meta: { title: 'Manage venues', icon: 'OfficeBuilding', roles: ['ADMIN'] },
+        meta: { title: 'Manage venues', subtitle: 'Catalogue, opening hours and weekly timetable', icon: 'OfficeBuilding', roles: ['ADMIN'] },
       },
       {
         path: 'admin/users',
         name: 'admin-users',
         component: AdminUsersView,
-        meta: { title: 'Users', icon: 'User', roles: ['ADMIN'] },
+        meta: { title: 'Users', subtitle: 'Accounts and access', icon: 'User', roles: ['ADMIN'] },
       },
       {
         path: 'notifications',
         name: 'notifications',
         component: NotificationsView,
-        meta: { title: 'Notifications', icon: 'Bell' },
+        meta: { title: 'Notifications', subtitle: 'What changed since you last looked', icon: 'Bell' },
       },
       {
         path: 'reports',
         name: 'reports',
         component: ReportsView,
-        meta: { title: 'Reports', icon: 'DataLine', roles: ['TEACHER', 'ADMIN'] },
+        meta: { title: 'Reports', subtitle: 'How much each venue is actually used', icon: 'DataLine', roles: ['TEACHER', 'ADMIN'] },
       },
     ],
   },
 ]
 
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-})
+// The demo build is hosted as plain static files, so it uses hash routes and never
+// needs a server that rewrites deep links to index.html.
+const history = import.meta.env.VITE_DEMO === '1' ? createWebHashHistory() : createWebHistory()
+
+const router = createRouter({ history, routes })
 
 router.beforeEach((to) => {
   if (to.meta.public) {

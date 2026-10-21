@@ -13,23 +13,23 @@ export const VENUE_TYPE_LABELS = {
 }
 
 export const VENUE_STATUS = {
-  OPEN: { label: 'Open', type: 'success' },
-  MAINTENANCE: { label: 'Maintenance', type: 'warning' },
-  CLOSED: { label: 'Closed', type: 'info' },
+  OPEN: { label: 'Open', pill: 'pill-green' },
+  MAINTENANCE: { label: 'Maintenance', pill: 'pill-amber' },
+  CLOSED: { label: 'Closed', pill: 'pill-slate' },
 }
 
 export const BOOKING_STATUS = {
-  PENDING: { label: 'Pending', type: 'warning' },
-  APPROVED: { label: 'Approved', type: 'success' },
-  REJECTED: { label: 'Rejected', type: 'danger' },
-  CANCELLED: { label: 'Cancelled', type: 'info' },
-  COMPLETED: { label: 'Completed', type: 'success' },
-  NO_SHOW: { label: 'No-show', type: 'danger' },
+  PENDING: { label: 'Pending', pill: 'pill-amber' },
+  APPROVED: { label: 'Approved', pill: 'pill-green' },
+  REJECTED: { label: 'Rejected', pill: 'pill-rose' },
+  CANCELLED: { label: 'Cancelled', pill: 'pill-slate' },
+  COMPLETED: { label: 'Completed', pill: 'pill-blue' },
+  NO_SHOW: { label: 'No-show', pill: 'pill-rose' },
 }
 
 export const BOOKING_PURPOSE = {
   FREE_PLAY: 'Free play',
-  CLASS: 'Class activity',
+  PE_CLASS: 'PE class',
   CLUB_TRAINING: 'Club training',
   EVENT: 'School event',
   EXAM: 'PE exam',
@@ -43,18 +43,18 @@ export const ROLE_LABELS = {
 }
 
 export const USER_STATUS = {
-  ACTIVE: { label: 'Active', type: 'success' },
-  DISABLED: { label: 'Disabled', type: 'danger' },
+  ACTIVE: { label: 'Active', pill: 'pill-green' },
+  DISABLED: { label: 'Disabled', pill: 'pill-slate' },
 }
 
 export function venueTypeLabel(type) {
   return VENUE_TYPE_LABELS[type] || type || '—'
 }
 export function venueStatusOf(status) {
-  return VENUE_STATUS[status] || { label: status || '—', type: 'info' }
+  return VENUE_STATUS[status] || { label: status || '—', pill: 'pill-slate' }
 }
 export function bookingStatusOf(status) {
-  return BOOKING_STATUS[status] || { label: status || '—', type: 'info' }
+  return BOOKING_STATUS[status] || { label: status || '—', pill: 'pill-slate' }
 }
 export function purposeLabel(purpose) {
   return BOOKING_PURPOSE[purpose] || purpose || '—'
@@ -63,7 +63,7 @@ export function roleLabel(role) {
   return ROLE_LABELS[role] || role || '—'
 }
 export function userStatusOf(status) {
-  return USER_STATUS[status] || { label: status || '—', type: 'info' }
+  return USER_STATUS[status] || { label: status || '—', pill: 'pill-slate' }
 }
 
 export function formatDateTime(value) {
@@ -79,8 +79,10 @@ export function formatDate(value) {
   return s.slice(0, 10)
 }
 
+// "08:00:00" (LocalTime) or "2026-10-21T08:00:00Z" (Instant) -> "08:00"
 export function formatTime(value) {
   if (!value) return '—'
   const s = String(value)
-  return s.slice(11, 16)
+  const m = s.match(/(\d{2}:\d{2})/)
+  return m ? m[1] : s
 }

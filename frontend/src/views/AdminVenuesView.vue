@@ -1,85 +1,137 @@
 <template>
-  <div>
-    <div class="page-head">
-      <h2 class="page-title">Manage venues</h2>
-      <el-button type="primary" :icon="Plus" @click="openCreate">New venue</el-button>
+  <div class="page">
+    <div class="toolbar">
+      <span class="muted">{{ rows.length }} venues in the catalogue</span>
+      <span class="spacer" />
+      <button class="btn btn-sm" @click="load">
+        <el-icon><Refresh /></el-icon> Refresh
+      </button>
+      <button class="btn btn-sm btn-primary" @click="openCreate">
+        <el-icon><Plus /></el-icon> New venue
+      </button>
     </div>
 
-    <el-table :data="rows" v-loading="loading" stripe>
-      <el-table-column prop="name" label="Name" min-width="140" />
-      <el-table-column label="Type" width="130">
-        <template #default="{ row }"><el-tag effect="plain" size="small">{{ venueTypeLabel(row.type) }}</el-tag></template>
-      </el-table-column>
-      <el-table-column label="Indoor" width="90">
-        <template #default="{ row }">{{ row.indoor ? 'Indoor' : 'Outdoor' }}</template>
-      </el-table-column>
-      <el-table-column prop="building" label="Building" width="110" />
-      <el-table-column prop="location" label="Location" width="110" />
-      <el-table-column prop="capacity" label="Capacity" width="80" align="center" />
-      <el-table-column label="Open hours" width="150">
-        <template #default="{ row }">{{ formatTime(row.openTime) }}–{{ formatTime(row.closeTime) }}</template>
-      </el-table-column>
-      <el-table-column label="Status" width="100">
-        <template #default="{ row }">
-          <el-tag :type="venueStatusOf(row.status).type" size="small">{{ venueStatusOf(row.status).label }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="Actions" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="openEdit(row)">Edit</el-button>
-          <el-button link :type="row.status === 'CLOSED' ? 'success' : 'warning'" size="small" @click="toggle(row)">
-            {{ row.status === 'CLOSED' ? 'Reopen' : 'Close' }}
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <div class="card" v-loading="loading">
+      <div class="thead">
+        <span>Venue</span>
+        <span>Where</span>
+        <span>Hours</span>
+        <span>Capacity</span>
+        <span>Status</span>
+        <span class="right">Actions</span>
+      </div>
 
-    <el-dialog v-model="dialog" :title="editing ? 'Edit venue' : 'New venue'" width="520px">
-      <el-form :model="form" label-width="92px">
-        <el-form-item label="Name"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="Type">
-          <el-select v-model="form.type" style="width: 100%">
-            <el-option v-for="(label, key) in typeOptions" :key="key" :label="label" :value="key" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Indoor">
-          <el-switch v-model="form.indoor" active-text="Indoor" inactive-text="Outdoor" />
-        </el-form-item>
-        <el-form-item label="Building"><el-input v-model="form.building" /></el-form-item>
-        <el-form-item label="Location"><el-input v-model="form.location" /></el-form-item>
-        <el-form-item label="Capacity"><el-input-number v-model="form.capacity" :min="1" :max="500" /></el-form-item>
-        <el-form-item label="Open hours">
-          <el-time-select v-model="form.openTime" :start="'06:00'" :step="'01:00'" :end="'22:00'" placeholder="Open" style="width: 130px" />
-          <span style="margin: 0 8px">–</span>
-          <el-time-select v-model="form.closeTime" :start="'07:00'" :step="'01:00'" :end="'23:00'" placeholder="Close" style="width: 130px" />
-        </el-form-item>
-        <el-form-item label="Status">
-          <el-select v-model="form.status" style="width: 140px">
-            <el-option v-for="(v, k) in statusOptions" :key="k" :label="v.label" :value="k" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="Rules">
-          <el-input v-model="form.rules" type="textarea" :rows="2" />
-        </el-form-item>
-      </el-form>
+      <div v-for="row in rows" :key="row.id" class="trow">
+        <div class="cell-main">
+          <strong>{{ row.name }}</strong>
+          <span class="muted">{{ venueTypeLabel(row.type) }} · {{ row.indoor ? 'Indoor' : 'Outdoor' }}</span>
+        </div>
+        <div class="cell-main">
+          <span>{{ row.building || '—' }}</span>
+          <span class="muted">{{ row.location || '—' }}</span>
+        </div>
+        <div class="tabular">{{ formatTime(row.openTime) }} – {{ formatTime(row.closeTime) }}</div>
+        <div class="tabular">{{ row.capacity }}</div>
+        <div>
+          <span class="pill" :class="venueStatusOf(row.status).pill">{{ venueStatusOf(row.status).label }}</span>
+        </div>
+        <div class="actions">
+          <button class="btn btn-sm" @click="openEdit(row)">Edit</button>
+          <button class="btn btn-sm btn-ghost" @click="toggle(row)">
+            {{ row.status === 'CLOSED' ? 'Reopen' : 'Close' }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="!loading && !rows.length" class="empty">
+        <strong>No venues yet</strong>
+        <span>Add the first court to start taking bookings.</span>
+      </div>
+    </div>
+
+    <el-drawer v-model="drawer" :title="editing ? 'Edit venue' : 'New venue'" size="440px">
+      <div class="form">
+        <label class="field">
+          <span>Name</span>
+          <el-input v-model="form.name" placeholder="Badminton Court 3" />
+        </label>
+
+        <div class="two">
+          <label class="field">
+            <span>Type</span>
+            <el-select v-model="form.type" style="width: 100%">
+              <el-option v-for="(label, key) in typeOptions" :key="key" :label="label" :value="key" />
+            </el-select>
+          </label>
+          <label class="field">
+            <span>Status</span>
+            <el-select v-model="form.status" style="width: 100%">
+              <el-option v-for="(v, key) in statusOptions" :key="key" :label="v.label" :value="key" />
+            </el-select>
+          </label>
+        </div>
+
+        <div class="two">
+          <label class="field">
+            <span>Building</span>
+            <el-input v-model="form.building" placeholder="Sports Hall" />
+          </label>
+          <label class="field">
+            <span>Location</span>
+            <el-input v-model="form.location" placeholder="Court 3" />
+          </label>
+        </div>
+
+        <div class="two">
+          <label class="field">
+            <span>Opens</span>
+            <el-time-select v-model="form.openTime" start="06:00" step="00:30" end="23:00" style="width: 100%" />
+          </label>
+          <label class="field">
+            <span>Closes</span>
+            <el-time-select v-model="form.closeTime" start="06:00" step="00:30" end="23:00" style="width: 100%" />
+          </label>
+        </div>
+
+        <div class="two">
+          <label class="field">
+            <span>Capacity</span>
+            <el-input-number v-model="form.capacity" :min="1" :max="200" controls-position="right" style="width: 100%" />
+          </label>
+          <label class="field">
+            <span>Setting</span>
+            <el-switch v-model="form.indoor" active-text="Indoor" inactive-text="Outdoor" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>House rules</span>
+          <el-input v-model="form.rules" type="textarea" :rows="3" placeholder="Non-marking shoes only" />
+        </label>
+      </div>
+
       <template #footer>
-        <el-button @click="dialog = false">Cancel</el-button>
-        <el-button type="primary" :loading="saving" @click="save">Save</el-button>
+        <div class="drawer-foot">
+          <button class="btn" @click="drawer = false">Cancel</button>
+          <button class="btn btn-primary" :disabled="saving" @click="save">
+            {{ saving ? 'Saving…' : 'Save venue' }}
+          </button>
+        </div>
       </template>
-    </el-dialog>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 import { listVenues, createVenue, updateVenue, closeVenue } from '../api'
 import { venueTypeLabel, venueStatusOf, formatTime, VENUE_TYPE_LABELS, VENUE_STATUS } from '../utils/format'
 
 const rows = ref([])
 const loading = ref(false)
-const dialog = ref(false)
+const drawer = ref(false)
 const editing = ref(false)
 const saving = ref(false)
 
@@ -114,8 +166,9 @@ async function load() {
 function openCreate() {
   Object.assign(form, emptyForm())
   editing.value = false
-  dialog.value = true
+  drawer.value = true
 }
+
 function openEdit(row) {
   Object.assign(form, {
     id: row.id,
@@ -125,15 +178,20 @@ function openEdit(row) {
     building: row.building,
     location: row.location,
     capacity: row.capacity,
-    openTime: row.openTime,
-    closeTime: row.closeTime,
+    openTime: formatTime(row.openTime),
+    closeTime: formatTime(row.closeTime),
     status: row.status,
     rules: row.rules,
   })
   editing.value = true
-  dialog.value = true
+  drawer.value = true
 }
+
 async function save() {
+  if (!form.name.trim()) {
+    ElMessage.warning('Give the venue a name')
+    return
+  }
   saving.value = true
   try {
     if (editing.value) {
@@ -143,20 +201,30 @@ async function save() {
       await createVenue(payload)
     }
     ElMessage.success('Saved')
-    dialog.value = false
+    drawer.value = false
     load()
   } finally {
     saving.value = false
   }
 }
+
 async function toggle(row) {
-  const next = row.status === 'CLOSED' ? 'Reopen' : 'Close'
-  await ElMessageBox.confirm(`${next} ${row.name}?`, next, { type: 'warning' }).catch(() => Promise.reject())
-  // Delete only sets the status to CLOSED; use Edit to reopen it
-  if (row.status !== 'CLOSED') {
+  const closing = row.status !== 'CLOSED'
+  try {
+    await ElMessageBox.confirm(
+      closing
+        ? 'Closing hides the venue from booking. Existing bookings stay.'
+        : 'Reopening lets students book this venue again.',
+      closing ? `Close ${row.name}?` : `Reopen ${row.name}?`,
+      { confirmButtonText: closing ? 'Close it' : 'Reopen', cancelButtonText: 'Back', type: 'warning' },
+    )
+  } catch {
+    return
+  }
+  if (closing) {
     await closeVenue(row.id)
   } else {
-    await updateVenue(row.id, { ...row, status: 'OPEN' })
+    await updateVenue(row.id, { ...row, openTime: formatTime(row.openTime), closeTime: formatTime(row.closeTime), status: 'OPEN' })
   }
   ElMessage.success('Status updated')
   load()
@@ -166,14 +234,127 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-head {
-  margin-bottom: 16px;
+.toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
 }
-.page-title {
-  margin: 0;
-  font-size: 20px;
+
+.thead,
+.trow {
+  display: grid;
+  grid-template-columns: minmax(160px, 1.3fr) minmax(130px, 1fr) 120px 90px 110px 170px;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 22px;
+}
+
+.thead {
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: var(--radius) var(--radius) 0 0;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.trow {
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.trow:last-of-type {
+  border-bottom: 0;
+}
+
+.trow:hover {
+  background: var(--surface-2);
+}
+
+.cell-main {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  min-width: 0;
+}
+
+.cell-main strong {
+  font-weight: 600;
+}
+
+.cell-main .muted {
+  font-size: 11.5px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.right {
+  text-align: right;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.field > span {
+  font-size: 12px;
+  font-weight: 550;
+  color: var(--ink-2);
+}
+
+.two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.drawer-foot {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .thead {
+    display: none;
+  }
+
+  .trow {
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    padding: 14px 16px;
+  }
+
+  .trow > div:nth-child(2),
+  .trow > div:nth-child(3),
+  .trow > div:nth-child(4) {
+    display: none;
+  }
+
+  .trow > div:nth-child(5) {
+    grid-column: 1;
+  }
+
+  .actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-self: center;
+  }
 }
 </style>

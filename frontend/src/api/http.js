@@ -3,7 +3,9 @@ import { ElMessage } from 'element-plus'
 import { authState, logout } from '../store/auth'
 
 const http = axios.create({
-  baseURL: '/api',
+  // Same origin in dev (Vite proxies /api) and in the split deployment the build
+  // points at the API host with VITE_API_BASE.
+  baseURL: import.meta.env.VITE_API_BASE || '/api',
   timeout: 15000,
 })
 
@@ -34,7 +36,9 @@ http.interceptors.response.use(
     if (status === 401 && !isLoginCall) {
       logout()
       ElMessage.error('Your session expired, please sign in again')
-      if (!location.pathname.endsWith('/login')) {
+      if (location.hash.startsWith('#/')) {
+        location.hash = '#/login'
+      } else if (!location.pathname.endsWith('/login')) {
         location.href = '/login'
       }
       return Promise.reject(error)

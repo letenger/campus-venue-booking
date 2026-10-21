@@ -8,6 +8,11 @@ Built for the shape of a middle or high school: a handful of venues (volleyball,
 football, indoor and outdoor tennis, squash, table tennis), one shared weekly timetable, and a lot
 of people who want the same hour after class.
 
+**[Open the live preview →](https://campus-venue.app.workbuddy.host/?sharecode=W2TN5KJL5I)**
+Sign in as `student` / `student123`, `teacher` / `teacher123` or `admin` / `admin123`.
+The preview is the real client running against an in-memory API, because Vercel cannot host
+Spring Boot — see [docs/deploy.md](docs/deploy.md) for what runs where.
+
 ![System architecture](docs/diagrams/architecture.svg)
 
 ## What it does
@@ -53,24 +58,28 @@ npm install
 npm run dev
 ```
 
-The first start seeds demo data: three accounts, six venues with their timetable, three equipment
-pools.
+The first start seeds demo data: six accounts, three classes, two clubs, six venues with their
+timetable, three equipment pools, and nine bookings spread across every status so no screen is
+empty.
 
 | Account | Password | Role |
 | --- | --- | --- |
 | `admin` | `admin123` | Admin |
 | `teacher` | `teacher123` | Teacher |
 | `student` | `student123` | Student |
+| `jordan`, `nina` | `student123` | Students with their own bookings |
 
-Production runs against MySQL:
+## Deploy
 
-```bash
-SPRING_PROFILES_ACTIVE=prod \
-DB_URL='jdbc:mysql://localhost:3306/campus_venue' \
-DB_USER=campus DB_PASSWORD=secret \
-JWT_SECRET='a-long-random-string' \
-./gradlew bootRun
-```
+| Target | What it runs | Command |
+| --- | --- | --- |
+| Vercel, any static host | the client with an in-memory API | `npm run build:demo` |
+| Render, Railway, Fly, Docker | the Spring Boot API | `backend/Dockerfile`, `render.yaml` |
+| Anywhere | both, as one JVM serving the built client | `./gradlew bootJar` |
+
+`docs/deploy.md` has the details, the environment variables and the honest gaps. Nothing is
+hidden behind a platform-specific lock-in: the demo build is one flag (`VITE_DEMO=1`), and the API
+is a jar plus a MySQL URL.
 
 ## Tests
 
@@ -101,11 +110,17 @@ frontend/
   src/store/     auth state in a reactive object
   src/views/     venues, venue detail, my bookings, approvals, admin, reports, notifications
   src/router/    routes with role guards
+  src/demo/      in-memory API used by `npm run build:demo`
+  vercel.json    static deploy config
 docs/
   design.md      the design document
   design.html    the same document rendered, figures inlined — open it in a browser
   api.md         endpoint reference
+  deploy.md      local, static demo and split hosting
   diagrams/      six SVG figures (architecture, ERD, flow, state machine, sequence, use cases)
+backend/
+  Dockerfile     JDK 25 build, JRE 25 runtime
+render.yaml      Render blueprint for the API
 ```
 
 ## API in one line

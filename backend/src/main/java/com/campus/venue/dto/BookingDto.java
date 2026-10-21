@@ -10,6 +10,7 @@ import java.time.LocalTime;
 public class BookingDto {
     public Long id;
     public Long userId;
+    public String userName;
     public Long venueId;
     public String venueName;
     public Long classId;
@@ -29,10 +30,11 @@ public class BookingDto {
     public boolean canCancel;
     public boolean canApprove;
 
-    public static BookingDto from(Booking b, String venueName, Long currentUserId) {
+    public static BookingDto from(Booking b, String venueName, String userName, Long currentUserId) {
         BookingDto d = new BookingDto();
         d.id = b.getId();
         d.userId = b.getUserId();
+        d.userName = userName;
         d.venueId = b.getVenueId();
         d.venueName = venueName;
         d.classId = b.getClassId();

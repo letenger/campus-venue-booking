@@ -11,62 +11,75 @@ import com.campus.venue.repository.VenueRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class ReportService {
 
-    private final BookingRepository bookingRepository;
-    private final VenueRepository venueRepository;
+    private final BookingRepository bookings;
+    private final VenueRepository venues;
 
-    public ReportService(BookingRepository bookingRepository, VenueRepository venueRepository) {
-        this.bookingRepository = bookingRepository;
-        this.venueRepository = venueRepository;
+    public ReportService(BookingRepository bookings, VenueRepository venues) {
+        this.bookings = bookings;
+        this.venues = venues;
     }
 
+    /**
+     * One query for the whole range, then counted in memory. The earlier version ran
+     * six count queries per venue, which is 48 round trips for a six-venue school.
+     */
     public List<UtilizationReport> utilization(Long venueId, LocalDate from, LocalDate to) {
-        if (from == null) {
-            from = LocalDate.now().minusDays(30);
-        }
-        if (to == null) {
-            to = LocalDate.now();
-        }
-        List<Venue> venues = venueId == null
-                ? venueRepository.findAll()
-                : List.of(venueRepository.findById(venueId)
+        LocalDate start = from == null ? LocalDate.now().minusDays(30) : from;
+        LocalDate end = to == null ? LocalDate.now() : to;
+
+        List<Venue> targets = venueId == null
+                ? venues.findAll()
+                : List.of(venues.findById(venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Venue not found")));
-        List<UtilizationReport> out = new ArrayList<>();
-        for (Venue v : venues) {
-            long total = 0;
-            for (BookingStatus s : BookingStatus.values()) {
-                total += bookingRepository.countByVenueAndStatusAndDateBetween(v.getId(), s, from, to);
-            }
-            long completed = bookingRepository.countCompletedByVenueAndDateBetween(v.getId(), from, to);
-            long cancelled = bookingRepository.countByVenueAndStatusAndDateBetween(v.getId(), BookingStatus.CANCELLED, from, to);
-            long noShow = bookingRepository.countByVenueAndStatusAndDateBetween(v.getId(), BookingStatus.NO_SHOW, from, to);
-            out.add(new UtilizationReport(v.getId(), v.getName(), v.getType(), total, completed, cancelled, noShow));
+
+        Map<Long, List<Booking>> byVenue = bookings.findByBookingDateBetween(start, end).stream()
+                .collect(Collectors.groupingBy(Booking::getVenueId));
+
+        List<UtilizationReport> report = new ArrayList<>();
+        for (Venue venue : targets) {
+            List<Booking> rows = byVenue.getOrDefault(venue.getId(), List.of());
+            report.add(new UtilizationReport(
+                    venue.getId(), venue.getName(), venue.getType(),
+                    rows.size(),
+                    count(rows, BookingStatus.COMPLETED),
+                    count(rows, BookingStatus.CANCELLED),
+                    count(rows, BookingStatus.NO_SHOW)));
         }
-        return out;
+        return report;
     }
 
     public BookingSummaryReport summary(LocalDate from, LocalDate to) {
-        if (from == null) {
-            from = LocalDate.now().minusDays(30);
-        }
-        if (to == null) {
-            to = LocalDate.now();
-        }
-        List<Booking> all = bookingRepository.findByBookingDateBetween(from, to);
-        long total = all.size();
-        Map<String, Long> byStatus = all.stream()
+        LocalDate start = from == null ? LocalDate.now().minusDays(30) : from;
+        LocalDate end = to == null ? LocalDate.now() : to;
+
+        List<Booking> rows = bookings.findByBookingDateBetween(start, end);
+
+        Map<String, Long> byStatus = rows.stream()
                 .collect(Collectors.groupingBy(b -> b.getStatus().name(), Collectors.counting()));
-        Map<String, Long> topVenues = all.stream()
-                .collect(Collectors.groupingBy(b -> b.getVenueId().toString(), Collectors.counting()))
+
+        Map<Long, String> names = venues.findAll().stream()
+                .collect(Collectors.toMap(Venue::getId, Venue::getName, (a, b) -> a));
+
+        Map<String, Long> topVenues = rows.stream()
+                .collect(Collectors.groupingBy(b -> names.getOrDefault(b.getVenueId(), "Unknown"), Collectors.counting()))
                 .entrySet().stream()
                 .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
                 .limit(5)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
-        return new BookingSummaryReport(total, byStatus, topVenues);
+
+        return new BookingSummaryReport(rows.size(), byStatus, topVenues);
+    }
+
+    private long count(List<Booking> rows, BookingStatus status) {
+        return rows.stream().filter(b -> b.getStatus() == status).count();
     }
 }

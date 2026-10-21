@@ -186,7 +186,7 @@ a `PUT` with `"status": "OPEN"`.
 | `attendeesCount` above venue capacity | `400` |
 
 Approval is required when `classId` or `clubId` is set, when `attendeesCount >= 10`, or when
-`purpose` is `CLUB_TRAINING`, `EVENT` or `EXAM`.
+`purpose` is `PE_CLASS`, `CLUB_TRAINING`, `EVENT` or `EXAM`.
 
 ### `GET /api/bookings/{id}` — owner, T, A
 
@@ -348,7 +348,7 @@ Both feed the optional class/club pickers in the booking form; selecting either 
 | `Role` | `STUDENT`, `TEACHER`, `ADMIN` |
 | `VenueType` | `VOLLEYBALL`, `BADMINTON`, `FOOTBALL`, `TENNIS_INDOOR`, `TENNIS_OUTDOOR`, `SQUASH`, `BASKETBALL`, `TABLE_TENNIS`, `OTHER` |
 | `VenueStatus` | `OPEN`, `MAINTENANCE`, `CLOSED` |
-| `BookingPurpose` | `FREE_PLAY`, `CLASS`, `CLUB_TRAINING`, `EVENT`, `EXAM`, `OTHER` |
+| `BookingPurpose` | `FREE_PLAY`, `PE_CLASS`, `CLUB_TRAINING`, `EVENT`, `EXAM`, `OTHER` |
 | `BookingStatus` | `PENDING`, `APPROVED`, `REJECTED`, `CANCELLED`, `COMPLETED`, `NO_SHOW` |
 | `NotificationType` | `BOOKING_CREATED`, `APPROVAL_REQUIRED`, `APPROVED`, `REJECTED`, `CANCELLED`, `NO_SHOW` |
 | `Status` (user) | `ACTIVE`, `DISABLED` |

@@ -115,7 +115,8 @@ public class BookingService {
         if (req.getClassId() != null || req.getClubId() != null || req.getAttendeesCount() >= 10) {
             return true;
         }
-        return req.getPurpose() == BookingPurpose.CLUB_TRAINING
+        return req.getPurpose() == BookingPurpose.PE_CLASS
+                || req.getPurpose() == BookingPurpose.CLUB_TRAINING
                 || req.getPurpose() == BookingPurpose.EVENT
                 || req.getPurpose() == BookingPurpose.EXAM;
     }
@@ -293,6 +294,14 @@ public class BookingService {
     }
 
     private BookingDto dto(Booking booking, String venueName) {
-        return BookingDto.from(booking, venueName, SecurityUtils.currentUserId());
+        return BookingDto.from(booking, venueName, requesterName(booking), SecurityUtils.currentUserId());
+    }
+
+    /** Approvals read better with a name than with an id. */
+    private String requesterName(Booking booking) {
+        return users.findById(booking.getUserId())
+                .map(User::getRealName)
+                .filter(name -> name != null && !name.isBlank())
+                .orElse(null);
     }
 }
