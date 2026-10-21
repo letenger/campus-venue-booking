@@ -1,0 +1,22 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+db.sqlite3
+*.log
+
+# Java / Gradle
+*.class
+build/
+.gradle/
+
+# Node / Vue
+node_modules/
+dist/
+.vite/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store

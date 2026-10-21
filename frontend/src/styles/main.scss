@@ -1,0 +1,67 @@
+$brand: #185fa5;
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f5f6f8;
+  color: #1f2329;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+}
+
+.app-brand {
+  font-size: 15px;
+  font-weight: 500;
+  color: $brand;
+  white-space: nowrap;
+}
+
+.app-page-title {
+  font-size: 13px;
+  color: #646a73;
+}
+
+.table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.grade-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.grade-badge.has-grade {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+
+.grade-badge.no-grade {
+  background: #f1efE8;
+  color: #8f8d86;
+}
+
+.cell-ellipsis {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+@media (max-width: 768px) {
+  .app-aside {
+    display: none;
+  }
+}

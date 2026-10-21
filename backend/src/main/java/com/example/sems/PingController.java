@@ -1,0 +1,12 @@
+package com.example.sems;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+class PingController {
+    @GetMapping("/api/ping")
+    String ping() {
+        return "ok";
+    }
+}

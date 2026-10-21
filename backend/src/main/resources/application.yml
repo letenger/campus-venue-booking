@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: campus-venue-booking
+  datasource:
+    url: jdbc:h2:mem:sems;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+  h2:
+    console:
+      enabled: true
+
+sems:
+  jwt:
+    secret: "change-me-in-prod-this-is-a-dev-secret-key-0123456789abcdef"
+    expiry-minutes: 1440
+  security:
+    cors-allowed-origins: "http://localhost:5173"
