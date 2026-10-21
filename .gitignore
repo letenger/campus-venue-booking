@@ -8,6 +8,12 @@ node_modules/
 dist/
 .vite/
 
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+
 # Editors / OS
 .idea/
 .vscode/
